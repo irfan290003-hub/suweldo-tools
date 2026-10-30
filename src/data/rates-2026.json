@@ -1,0 +1,115 @@
+{
+  "year": 2026,
+  "documentationRef": "/src/data/PAYROLL_RULES_DOCUMENTATION.md",
+  "statutoryBasis": {
+    "sss": "Republic Act No. 11199 (Social Security Act of 2018) § 4",
+    "philhealth": "Republic Act No. 11223 (Universal Health Care Act) § 10",
+    "pagibig": "Republic Act No. 9679 & HDMF Circular No. 460",
+    "withholdingTax": "Republic Act No. 10963 (TRAIN Law) & RA 9504",
+    "thirteenthMonth": "Presidential Decree No. 851 & DOLE Revised Guidelines (Nov 16, 1987); Tax basis: NIRC Sec. 32(B)(7)(e) as amended by RA 10963"
+  },
+  "sss": {
+    "agency": "Social Security System",
+    "officialUrl": "https://www.sss.gov.ph",
+    "totalRate": 0.15,
+    "employeeRate": 0.05,
+    "employerRate": 0.10,
+    "mscMin": 5000,
+    "mscMax": 35000,
+    "mscStep": 500,
+    "salaryFloorThreshold": 5250,
+    "salaryCeilingThreshold": 34750,
+    "regularMscCap": 20000,
+    "wispThresholdMsc": 20000,
+    "ecThresholdMsc": 15000,
+    "ecRateBelowThreshold": 10,
+    "ecRateAboveThreshold": 30
+  },
+  "philhealth": {
+    "agency": "Philippine Health Insurance Corporation",
+    "officialUrl": "https://www.philhealth.gov.ph",
+    "totalPremiumRate": 0.05,
+    "employeeShareRate": 0.025,
+    "employerShareRate": 0.025,
+    "salaryFloor": 10000,
+    "salaryCeiling": 100000,
+    "minEmployeeContribution": 250,
+    "maxEmployeeContribution": 2500
+  },
+  "pagibig": {
+    "agency": "Home Development Mutual Fund",
+    "officialUrl": "https://www.pagibigfund.gov.ph",
+    "lowSalaryThreshold": 1500,
+    "employeeRateLow": 0.01,
+    "employeeRate": 0.02,
+    "employerRate": 0.02,
+    "maxFundSalary": 10000,
+    "maxEmployeeContribution": 200
+  },
+  "withholdingTax": {
+    "agency": "Bureau of Internal Revenue",
+    "officialUrl": "https://www.bir.gov.ph",
+    "annualBrackets": [
+      {
+        "id": "tier-1",
+        "description": "Up to ₱250,000",
+        "min": 0,
+        "max": 250000,
+        "baseTax": 0,
+        "rate": 0
+      },
+      {
+        "id": "tier-2",
+        "description": "Over ₱250,000 to ₱400,000",
+        "min": 250000,
+        "max": 400000,
+        "baseTax": 0,
+        "rate": 0.15
+      },
+      {
+        "id": "tier-3",
+        "description": "Over ₱400,000 to ₱800,000",
+        "min": 400000,
+        "max": 800000,
+        "baseTax": 22500,
+        "rate": 0.20
+      },
+      {
+        "id": "tier-4",
+        "description": "Over ₱800,000 to ₱2,000,000",
+        "min": 800000,
+        "max": 2000000,
+        "baseTax": 102500,
+        "rate": 0.25
+      },
+      {
+        "id": "tier-5",
+        "description": "Over ₱2,000,000 to ₱8,000,000",
+        "min": 2000000,
+        "max": 8000000,
+        "baseTax": 402500,
+        "rate": 0.30
+      },
+      {
+        "id": "tier-6",
+        "description": "Over ₱8,000,000",
+        "min": 8000000,
+        "max": null,
+        "baseTax": 2202500,
+        "rate": 0.35
+      }
+    ]
+  },
+  "thirteenthMonth": {
+    "governingAgencies": ["Department of Labor and Employment (DOLE)", "Bureau of Internal Revenue (BIR)"],
+    "officialUrls": [
+      "https://www.dole.gov.ph",
+      "https://www.bir.gov.ph"
+    ],
+    "statutoryRule": "Total basic salary earned during calendar year divided by 12",
+    "annualDivisor": 12,
+    "minimumServiceMonths": 1,
+    "taxExemptionCap": 90000,
+    "paymentDeadline": "On or before December 24"
+  }
+}

@@ -1,0 +1,982 @@
+<!doctype html>
+<html lang="en-PH" class="h-full bg-slate-50 text-slate-900">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="google" content="notranslate" />
+    <title>Philippines Salary &amp; Payroll Calculators | SuweldoTools</title>
+    <meta
+      name="description"
+      content="Calculate take-home pay, 13th month pay, SSS, PhilHealth, and overtime in the Philippines with free, easy-to-use payroll calculators for 2026."
+    />
+    <link rel="canonical" href="https://suweldotools.com/" />
+    <link rel="alternate" hreflang="en-PH" href="https://suweldotools.com/" />
+    <link rel="alternate" hreflang="tl-PH" href="https://suweldotools.com/tl/" />
+    <link rel="alternate" hreflang="x-default" href="https://suweldotools.com/" />
+
+    <!-- Favicon & App Icons -->
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+    <!-- Open Graph Metadata -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://suweldotools.com/" />
+    <meta property="og:site_name" content="SuweldoTools" />
+    <meta property="og:title" content="Philippines Salary &amp; Payroll Calculators | SuweldoTools" />
+    <meta
+      property="og:description"
+      content="Calculate take-home pay, 13th month pay, SSS, PhilHealth, and overtime in the Philippines with free, easy-to-use payroll calculators for 2026."
+    />
+    <meta property="og:locale" content="en_PH" />
+    <meta property="og:image" content="https://suweldotools.com/og-image-en.png" />
+    <meta property="og:image:secure_url" content="https://suweldotools.com/og-image-en.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:alt" content="SuweldoTools — Free Philippine Salary and Payroll Calculators 2026" />
+
+    <!-- Twitter Card Metadata -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Philippines Salary &amp; Payroll Calculators | SuweldoTools" />
+    <meta
+      name="twitter:description"
+      content="Calculate take-home pay, 13th month pay, SSS contributions, PhilHealth premiums, and overtime pay in the Philippines with free, easy-to-use payroll calculators for 2026."
+    />
+    <meta name="twitter:image" content="https://suweldotools.com/og-image-en.png" />
+    <meta name="twitter:image:alt" content="SuweldoTools — Free Philippine Salary and Payroll Calculators 2026" />
+
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="/src/index.css" />
+
+    <!-- Schema.org JSON-LD Structured Data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://suweldotools.com/#website",
+            "name": "SuweldoTools",
+            "alternateName": [
+              "SuweldoTools.com",
+              "Suweldo Tools"
+            ],
+            "url": "https://suweldotools.com/",
+            "inLanguage": "en-PH",
+            "publisher": {
+              "@id": "https://suweldotools.com/#organization"
+            },
+            "description": "Free, transparent salary calculators and payroll utilities for employees and employers in the Philippines."
+          },
+          {
+            "@type": "Organization",
+            "@id": "https://suweldotools.com/#organization",
+            "name": "SuweldoTools",
+            "url": "https://suweldotools.com/",
+            "logo": "https://suweldotools.com/apple-touch-icon.png",
+            "description": "Independent payroll utility platform dedicated to Philippine compensation transparency.",
+            "sameAs": [
+              "https://www.facebook.com/profile.php?id=61595908386922",
+              "https://www.instagram.com/suweldotools/",
+              "https://www.youtube.com/@suweldotools"
+            ]
+          },
+          {
+            "@type": "FAQPage",
+            "@id": "https://suweldotools.com/#faq",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "What is SuweldoTools?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "SuweldoTools is a free, web-based suite of salary and payroll calculators designed specifically for Philippine wage earners, jobseekers, freelancers, and human resource professionals."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Are these salary calculators completely free to use?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. All salary calculation tools on SuweldoTools are 100% free with no sign-ups, subscriptions, or paywalls required."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Does SuweldoTools save or transmit my salary information?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. All computations run entirely on your device's browser using client-side JavaScript. We do not store, log, or transmit your financial inputs to any server."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Which Philippine government deductions are supported?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Our tools compute mandatory employee deductions for the Social Security System (SSS), Philippine Health Insurance Corporation (PhilHealth), Home Development Mutual Fund (Pag-IBIG), and Bureau of Internal Revenue (BIR) withholding tax."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can these calculators replace an employer's official payslip?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. Our tools provide informational estimates based on standard statutory schedules. Company-specific factors such as loan amortizations, voluntary Pag-IBIG MP2 contributions, health card dependents, unpaid absences, and year-end annualization can cause your actual payroll to differ."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body class="min-h-full flex flex-col font-sans antialiased text-slate-800 bg-slate-50 selection:bg-emerald-100 selection:text-emerald-900">
+    <!-- Header / Navigation Bar -->
+    <header class="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur-md">
+      <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-3 sm:px-4 lg:px-4 xl:px-8 gap-2 sm:gap-3 xl:gap-4">
+        <a href="/" class="flex items-center gap-2 sm:gap-2.5 group min-w-0 shrink-0">
+          <img
+            src="/assets/aistudio/suweldotools-logo-icon_7c91e4ab.svg"
+            alt="SuweldoTools logo"
+            width="36"
+            height="36"
+            class="h-8 w-8 sm:h-9 sm:w-9 shrink-0 object-contain rounded-lg shadow-xs group-hover:opacity-95 transition"
+          />
+          <div class="flex flex-col min-w-0">
+            <span class="text-base sm:text-lg font-bold tracking-tight text-slate-900 group-hover:text-emerald-700 transition leading-tight truncate">SuweldoTools</span>
+            <span class="hidden min-[360px]:block text-[9px] sm:text-[10px] uppercase font-semibold tracking-tight sm:tracking-wider text-slate-500 leading-tight truncate">Philippines Payroll Utilities</span>
+          </div>
+        </a>
+
+        <!-- Desktop Navigation (Hidden on all viewports) -->
+        <nav aria-label="Main navigation" class="hidden">
+            <a href="/" class="py-1 text-emerald-600 font-semibold border-b-2 border-emerald-600 whitespace-nowrap" aria-current="page">
+              Home
+            </a>
+            <a href="/take-home-pay-calculator-philippines/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
+              Take-Home Pay
+            </a>
+            <a href="/13th-month-pay-calculator/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
+              13th Month Pay
+            </a>
+            <a href="/sss-contribution-table-2026/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
+              SSS Table 2026
+            </a>
+            <a href="/philhealth-contribution-calculator/" class="text-[11px] lg:text-xs xl:text-[13px] tracking-tight py-1 hover:text-emerald-600 transition whitespace-nowrap">PhilHealth Contribution Calculator</a>
+            <a href="/blog/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
+              Blog
+            </a>
+            <a href="/about/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
+              About
+            </a>
+            <a href="/contact/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
+              Contact
+            </a>
+          </nav>
+
+        <!-- Desktop Language Selector (Hidden on all viewports) -->
+        <div role="group" aria-label="Language selector" translate="no" class="hidden">
+            <a
+              href="/"
+              data-lang-switch="en"
+              aria-current="page"
+              aria-label="Current language: English"
+              class="px-2 xl:px-2.5 py-1 rounded-lg bg-white text-emerald-700 shadow-2xs transition whitespace-nowrap"
+            >
+              English
+            </a>
+            <a
+              href="/tl/"
+              data-lang-switch="tl"
+              lang="tl-PH"
+              aria-label="Switch language to Filipino"
+              class="px-2 xl:px-2.5 py-1 rounded-lg text-slate-600 hover:text-slate-900 transition whitespace-nowrap"
+            >
+              Filipino
+            </a>
+          </div>
+
+        <!-- English Navigation Controls: Compact Language Switcher + Hamburger Button (Always visible on all screen widths) -->
+        <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div role="group" aria-label="Language selector" translate="no" class="inline-flex items-center rounded-xl border border-slate-200 bg-slate-100/80 p-0.5 text-[11px] font-bold">
+            <a
+              href="/"
+              data-lang-switch="en"
+              aria-current="page"
+              aria-label="Current language: English"
+              class="inline-flex min-h-[36px] min-w-[36px] items-center justify-center px-2.5 py-1.5 rounded-lg bg-white text-emerald-700 shadow-2xs"
+            >
+              EN
+            </a>
+            <a
+              href="/tl/"
+              data-lang-switch="tl"
+              lang="tl-PH"
+              aria-label="Switch language to Filipino"
+              class="inline-flex min-h-[36px] min-w-[36px] items-center justify-center px-2.5 py-1.5 rounded-lg text-slate-600 hover:text-emerald-700 transition"
+            >
+              FIL
+            </a>
+          </div>
+
+          <button
+            type="button"
+            id="mobile-menu-btn"
+            data-mobile-menu-toggle
+            aria-expanded="false"
+            aria-controls="mobileNavigationPanel"
+            aria-label="Open navigation menu"
+            class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition cursor-pointer"
+          >
+            <svg id="mobile-menu-icon-open" data-menu-icon="open" data-mobile-menu-open-icon class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+            <svg id="mobile-menu-icon-close" data-menu-icon="close" data-mobile-menu-close-icon class="hidden h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile Navigation Backdrop Overlay -->
+      <div
+        id="mobileMenuBackdrop"
+        data-mobile-menu-backdrop
+        class="hidden fixed inset-0 top-16 bg-slate-900/40 backdrop-blur-xs z-40"
+        aria-hidden="true"
+      ></div>
+
+      <!-- Mobile Navigation Panel -->
+      <nav
+        id="mobileNavigationPanel"
+        data-mobile-menu
+        aria-label="Navigation menu"
+        class="hidden fixed inset-x-0 top-16 z-50 bg-white border-b border-slate-200 shadow-xl max-h-[calc(100vh-4rem)] max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain px-4 pt-3 pb-5 transition-all duration-200 ease-out"
+      >
+        <!-- Mobile Language Selector -->
+        <div class="mb-3 pb-3 border-b border-slate-100">
+          <span class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 px-1">
+            Language / Wika
+          </span>
+          <div role="group" aria-label="Select language" translate="no" class="grid grid-cols-2 gap-2">
+            <a
+              href="/"
+              data-lang-switch="en"
+              aria-current="page"
+              class="flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-bold bg-emerald-600 text-white shadow-2xs transition"
+            >
+              <span>English</span>
+              <span class="text-[10px] opacity-90">&#10003;</span>
+            </a>
+            <a
+              href="/tl/"
+              data-lang-switch="tl"
+              lang="tl-PH"
+              class="flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200/80 transition"
+            >
+              <span>Filipino (Tagalog)</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="flex flex-col space-y-1">
+          <a
+            href="/"
+            aria-current="page"
+            class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80 transition"
+          >
+            <span>Home</span>
+            <span class="text-xs font-semibold text-emerald-600">Active</span>
+          </a>
+          <a
+            href="/take-home-pay-calculator-philippines/"
+            class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
+          >
+            <span>Take-Home Pay</span>
+            <span class="text-xs text-slate-400">&rarr;</span>
+          </a>
+          <a
+            href="/13th-month-pay-calculator/"
+            class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
+          >
+            <span>13th Month Pay</span>
+            <span class="text-xs text-slate-400">&rarr;</span>
+          </a>
+          <a
+            href="/sss-contribution-table-2026/"
+            class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
+          >
+            <span>SSS Table 2026</span>
+            <span class="text-xs text-slate-400">&rarr;</span>
+          </a>
+          <a
+            href="/philhealth-contribution-calculator/"
+            class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
+          >
+            <span>PhilHealth Contribution Calculator</span>
+            <span class="text-xs text-slate-400">&rarr;</span>
+          </a>
+          <a
+            href="/overtime-holiday-pay-calculator-philippines/"
+            class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
+          >
+            <span>Overtime &amp; Holiday Pay</span>
+            <span class="text-xs text-slate-400">&rarr;</span>
+          </a>
+          <a
+            href="/blog/"
+            class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
+          >
+            <span>Blog</span>
+            <span class="text-xs text-slate-400">&rarr;</span>
+          </a>
+          <a
+            href="/about/"
+            class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
+          >
+            <span>About</span>
+            <span class="text-xs text-slate-400">&rarr;</span>
+          </a>
+          <a
+            href="/contact/"
+            class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
+          >
+            <span>Contact</span>
+            <span class="text-xs text-slate-400">&rarr;</span>
+          </a>
+        </div>
+      </nav>
+    </header>
+
+    <!-- Main Homepage Content -->
+    <main class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-12 sm:space-y-16">
+      <!-- 1. Hero Section -->
+      <section class="rounded-2xl border border-slate-200 bg-white px-5 py-8 sm:px-10 sm:py-14 shadow-xs text-center">
+        <div class="max-w-3xl mx-auto space-y-5 sm:space-y-6">
+          <p class="text-xs sm:text-sm font-semibold text-emerald-700 tracking-wide">
+            2026 Philippine Statutory Payroll Schedules &middot; TRAIN Law &middot; DOLE PD 851
+          </p>
+
+          <h1 class="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 leading-tight text-balance">
+            Philippines Salary &amp; Payroll Calculators
+          </h1>
+
+          <p class="text-sm sm:text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto">
+            Calculate take-home pay, estimate 13th month pay, and check official SSS, PhilHealth, Pag-IBIG, and withholding tax deductions with fast, browser-based tools.
+          </p>
+
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 pt-2">
+            <a
+              href="/take-home-pay-calculator-philippines/"
+              class="w-full sm:w-auto min-h-[48px] px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm sm:text-base shadow-xs transition-smooth inline-flex items-center justify-center gap-2 whitespace-nowrap"
+            >
+              <span>Open Take-Home Pay Calculator</span>
+              <span aria-hidden="true">&rarr;</span>
+            </a>
+            <a
+              href="#tools"
+              class="w-full sm:w-auto min-h-[48px] px-6 py-3.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-300 text-slate-800 font-semibold text-sm sm:text-base transition-smooth inline-flex items-center justify-center whitespace-nowrap"
+            >
+              Browse All Tools
+            </a>
+          </div>
+
+          <div class="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 text-xs text-slate-500 font-medium">
+            <span>100% Free Utility</span>
+            <span aria-hidden="true">&middot;</span>
+            <span>No Sign-Up Required</span>
+            <span aria-hidden="true">&middot;</span>
+            <span>Client-Side Browser Privacy</span>
+            <span aria-hidden="true">&middot;</span>
+            <span>Mobile &amp; Desktop Ready</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Core Payroll Calculators & Reference Tools -->
+      <section id="tools" class="space-y-6 scroll-mt-20">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2 border-b border-slate-200 pb-4">
+          <div>
+            <h2 class="text-xl sm:text-3xl font-bold tracking-tight text-slate-900">
+              Available Calculators &amp; Reference Tools
+            </h2>
+            <p class="mt-1 text-sm sm:text-base text-slate-600">
+              Select a tool below to compute your monthly net pay, year-end 13th month benefit, exact SSS bracket, or PhilHealth premium contribution.
+            </p>
+          </div>
+          <p class="text-xs font-medium text-slate-500 shrink-0">
+            5 Active Tools &middot; Updated for 2026
+          </p>
+        </div>
+
+        <!-- Primary 4-Tool Grid (Stacked on Mobile, 2x2 Grid on Tablet/Desktop) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 items-stretch">
+          <!-- Card 1: Take-Home Pay Calculator -->
+          <article class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs hover:border-emerald-500 transition-smooth flex flex-col justify-between">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between gap-2 text-xs font-medium text-slate-500">
+                <span class="text-emerald-700 font-semibold">Core Salary Calculator</span>
+                <span>Monthly &amp; Kinsenas</span>
+              </div>
+
+              <div class="space-y-2">
+                <h3 class="text-lg sm:text-xl font-bold text-slate-900 leading-snug">
+                  <a href="/take-home-pay-calculator-philippines/" class="hover:text-emerald-700 transition">
+                    Take-Home Pay Calculator
+                  </a>
+                </h3>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                  Compute your monthly and per-cutoff (kinsenas) net salary after mandatory employee contributions and BIR withholding tax.
+                </p>
+              </div>
+
+              <ul class="space-y-2 pt-2 border-t border-slate-100 text-xs sm:text-sm text-slate-600">
+                <li class="flex items-start gap-2">
+                  <span class="text-emerald-600 font-bold shrink-0" aria-hidden="true">&#10003;</span>
+                  <span>SSS (5% employee share), PhilHealth (2.5%), and Pag-IBIG (₱200 cap)</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="text-emerald-600 font-bold shrink-0" aria-hidden="true">&#10003;</span>
+                  <span>BIR TRAIN Law graduated withholding tax &amp; MWE exemption toggle</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="text-emerald-600 font-bold shrink-0" aria-hidden="true">&#10003;</span>
+                  <span>Instant switch between Monthly and Per Cutoff (Kinsenas) views</span>
+                </li>
+              </ul>
+            </div>
+
+            <div class="pt-5 mt-6 border-t border-slate-100">
+              <a
+                href="/take-home-pay-calculator-philippines/"
+                class="w-full min-h-[44px] px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-xs transition-smooth inline-flex items-center justify-center gap-2 whitespace-nowrap"
+              >
+                <span>Open Take-Home Pay Calculator</span>
+                <span aria-hidden="true">&rarr;</span>
+              </a>
+            </div>
+          </article>
+
+          <!-- Card 2: 13th Month Pay Calculator -->
+          <article class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs hover:border-emerald-500 transition-smooth flex flex-col justify-between">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between gap-2 text-xs font-medium text-slate-500">
+                <span class="text-emerald-700 font-semibold">Year-End Statutory Benefit</span>
+                <span>DOLE PD 851</span>
+              </div>
+
+              <div class="space-y-2">
+                <h3 class="text-lg sm:text-xl font-bold text-slate-900 leading-snug">
+                  <a href="/13th-month-pay-calculator/" class="hover:text-emerald-700 transition">
+                    13th Month Pay Calculator
+                  </a>
+                </h3>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                  Estimate your mandatory 13th month pay based on total basic salary earned during the calendar year and check tax-exempt thresholds.
+                </p>
+              </div>
+
+              <ul class="space-y-2 pt-2 border-t border-slate-100 text-xs sm:text-sm text-slate-600">
+                <li class="flex items-start gap-2">
+                  <span class="text-emerald-600 font-bold shrink-0" aria-hidden="true">&#10003;</span>
+                  <span>Supports full-year, prorated partial-year, and month-by-month modes</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="text-emerald-600 font-bold shrink-0" aria-hidden="true">&#10003;</span>
+                  <span>Tracks the ₱90,000 BIR tax-exempt ceiling under the TRAIN Law</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="text-emerald-600 font-bold shrink-0" aria-hidden="true">&#10003;</span>
+                  <span>Clear breakdown of basic pay inclusions vs. excluded allowances</span>
+                </li>
+              </ul>
+            </div>
+
+            <div class="pt-5 mt-6 border-t border-slate-100">
+              <a
+                href="/13th-month-pay-calculator/"
+                class="w-full min-h-[44px] px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-xs transition-smooth inline-flex items-center justify-center gap-2 whitespace-nowrap"
+              >
+                <span>Open 13th Month Pay Calculator</span>
+                <span aria-hidden="true">&rarr;</span>
+              </a>
+            </div>
+          </article>
+
+          <!-- Card 3: SSS Contribution Table 2026 -->
+          <article class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs hover:border-emerald-500 transition-smooth flex flex-col justify-between">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between gap-2 text-xs font-medium text-slate-500">
+                <span class="text-emerald-700 font-semibold">Interactive Schedule</span>
+                <span>RA 11199 &middot; 61 Tiers</span>
+              </div>
+
+              <div class="space-y-2">
+                <h3 class="text-lg sm:text-xl font-bold text-slate-900 leading-snug">
+                  <a href="/sss-contribution-table-2026/" class="hover:text-emerald-700 transition">
+                    SSS Contribution Table 2026
+                  </a>
+                </h3>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                  Look up your exact Monthly Salary Credit (MSC), employee deduction, employer share, MPF/WISP tier, and EC contribution.
+                </p>
+              </div>
+
+              <ul class="space-y-2 pt-2 border-t border-slate-100 text-xs sm:text-sm text-slate-600">
+                <li class="flex items-start gap-2">
+                  <span class="text-emerald-600 font-bold shrink-0" aria-hidden="true">&#10003;</span>
+                  <span>Instant salary lookup across all 61 MSC brackets (₱5,000 to ₱35,000)</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="text-emerald-600 font-bold shrink-0" aria-hidden="true">&#10003;</span>
+                  <span>Separates Regular SS, Mandatory Provident Fund (WISP), and EC</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="text-emerald-600 font-bold shrink-0" aria-hidden="true">&#10003;</span>
+                  <span>Aligned with SSS Circular No. 2024-006 (15% contribution rate)</span>
+                </li>
+              </ul>
+            </div>
+
+            <div class="pt-5 mt-6 border-t border-slate-100">
+              <a
+                href="/sss-contribution-table-2026/"
+                class="w-full min-h-[44px] px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-xs transition-smooth inline-flex items-center justify-center gap-2 whitespace-nowrap"
+              >
+                <span>Open SSS Contribution Table</span>
+                <span aria-hidden="true">&rarr;</span>
+              </a>
+            </div>
+          </article>
+
+          <!-- Card 4: PhilHealth Contribution Calculator -->
+          <article class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs hover:border-emerald-500 transition-smooth flex flex-col justify-between">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between gap-2 text-xs font-medium text-slate-500">
+                <span class="text-emerald-700 font-semibold">Statutory Health Insurance</span>
+                <span>RA 11223 &middot; 5.0% Rate</span>
+              </div>
+
+              <div class="space-y-2">
+                <h3 class="text-lg sm:text-xl font-bold text-slate-900 leading-snug">
+                  <a href="/philhealth-contribution-calculator/" class="hover:text-emerald-700 transition">
+                    PhilHealth Contribution Calculator
+                  </a>
+                </h3>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                  Calculate your mandatory monthly and per-cutoff PhilHealth premium contribution with exact employee and employer 50/50 cost sharing.
+                </p>
+              </div>
+
+              <ul class="space-y-2 pt-2 border-t border-slate-100 text-xs sm:text-sm text-slate-600">
+                <li class="flex items-start gap-2">
+                  <span class="text-emerald-600 font-bold shrink-0" aria-hidden="true">&#10003;</span>
+                  <span>5.0% premium rate with 50/50 equal split (2.5% employee / 2.5% employer)</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="text-emerald-600 font-bold shrink-0" aria-hidden="true">&#10003;</span>
+                  <span>Statutory monthly income floor of ₱10,000 (₱500) and ceiling of ₱100,000 (₱5,000)</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="text-emerald-600 font-bold shrink-0" aria-hidden="true">&#10003;</span>
+                  <span>Instant switch between Monthly and Per Cutoff (Kinsenas / Bi-Weekly) calculations</span>
+                </li>
+              </ul>
+            </div>
+
+            <div class="pt-5 mt-6 border-t border-slate-100">
+              <a
+                href="/philhealth-contribution-calculator/"
+                class="w-full min-h-[44px] px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-xs transition-smooth inline-flex items-center justify-center gap-2 whitespace-nowrap"
+              >
+                <span>Open PhilHealth Contribution Calculator</span>
+                <span aria-hidden="true">&rarr;</span>
+              </a>
+            </div>
+          </article>
+
+          <!-- Card 5: Overtime & Holiday Pay Calculator -->
+          <article class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-xs hover:border-emerald-500 transition-smooth flex flex-col justify-between">
+            <div class="space-y-4">
+              <div class="flex items-center justify-between gap-2 text-xs font-medium text-slate-500">
+                <span class="text-emerald-700 font-semibold">Available Now &middot; DOLE Labor Code</span>
+              </div>
+
+              <div class="space-y-2">
+                <h3 class="text-lg sm:text-xl font-bold text-slate-900 leading-snug">
+                  <a href="/overtime-holiday-pay-calculator-philippines/" class="hover:text-emerald-700 transition">
+                    Overtime &amp; Holiday Pay Calculator
+                  </a>
+                </h3>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                  Calculate overtime pay, regular and special holiday pay, rest day premiums, and night shift differential for Philippine employees in 2026.
+                </p>
+              </div>
+
+              <ul class="space-y-2 pt-2 border-t border-slate-100 text-xs sm:text-sm text-slate-600">
+                <li class="flex items-start gap-2">
+                  <span class="text-emerald-600 font-bold shrink-0" aria-hidden="true">&#10003;</span>
+                  <span>Ordinary workday, rest day, and holiday pay multipliers.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="text-emerald-600 font-bold shrink-0" aria-hidden="true">&#10003;</span>
+                  <span>Overtime calculations with applicable premiums.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="text-emerald-600 font-bold shrink-0" aria-hidden="true">&#10003;</span>
+                  <span>Night Shift Differential (NSD) for regular and overtime hours.</span>
+                </li>
+              </ul>
+            </div>
+
+            <div class="pt-5 mt-6 border-t border-slate-100">
+              <a
+                href="/overtime-holiday-pay-calculator-philippines/"
+                class="w-full min-h-[44px] px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-xs transition-smooth inline-flex items-center justify-center gap-2 whitespace-nowrap"
+              >
+                <span>Open Overtime &amp; Holiday Pay Calculator</span>
+                <span aria-hidden="true">&rarr;</span>
+              </a>
+            </div>
+          </article>
+        </div>
+
+        <!-- Planned Utilities Strip -->
+        <div class="rounded-2xl border border-slate-200 bg-slate-100/70 p-4 sm:p-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+            <h3 class="text-sm font-bold text-slate-800">
+              Additional Payroll Utilities in Development
+            </h3>
+            <span class="text-xs text-slate-500">
+              Note: Pag-IBIG deductions are already computed inside the Take-Home Pay Calculator.
+            </span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="rounded-xl border border-slate-200/80 bg-white/80 p-4 space-y-1">
+              <p class="text-xs font-medium text-slate-400">Planned Utility &middot; HDMF Circular 460</p>
+              <h4 class="text-sm font-bold text-slate-700">Pag-IBIG &amp; MP2 Savings Estimator</h4>
+              <p class="text-xs text-slate-500 leading-relaxed">
+                Mandatory Pag-IBIG Regular Savings lookup alongside voluntary MP2 compounded dividend projections.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. 2026 Philippine Statutory Deduction Reference Summary -->
+      <section class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-8 shadow-xs space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2 border-b border-slate-200 pb-4">
+          <div>
+            <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
+              2026 Philippine Statutory Deduction Rates at a Glance
+            </h2>
+            <p class="mt-1 text-sm text-slate-600">
+              Summary of mandatory employee and employer schedules used across SuweldoTools calculators.
+            </p>
+          </div>
+          <a href="/about/" class="text-xs font-semibold text-emerald-700 hover:text-emerald-800 hover:underline whitespace-nowrap shrink-0">
+            View Methodology &amp; Legal Sources &rarr;
+          </a>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 tabular-nums">
+          <div class="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-2">
+            <p class="text-xs font-semibold text-emerald-700">SSS (Social Security System)</p>
+            <p class="text-lg font-extrabold text-slate-900">15% of MSC</p>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              <strong>5.0% Employee</strong> / <strong>10.0% Employer</strong> (+ ₱10 or ₱30 EC). Evaluated on Monthly Salary Credit from ₱5,000 to ₱35,000 (MPF/WISP above ₱20,000).
+            </p>
+            <p class="text-[11px] text-slate-500 pt-1 border-t border-slate-200/70">
+              Basis: RA 11199 &middot; SSS Circular 2024-006
+            </p>
+          </div>
+
+          <div class="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-2">
+            <p class="text-xs font-semibold text-emerald-700">PhilHealth (NHIP)</p>
+            <p class="text-lg font-extrabold text-slate-900">5.0% Premium</p>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              <strong>2.5% Employee</strong> / <strong>2.5% Employer</strong> equal split. Applied to monthly basic salary with a ₱10,000 floor (₱250 EE) and ₱100,000 ceiling (₱2,500 EE).
+            </p>
+            <p class="text-[11px] text-slate-500 pt-1 border-t border-slate-200/70">
+              Basis: RA 11223 (UHC Act) &middot; PhilHealth Advisory
+            </p>
+          </div>
+
+          <div class="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-2">
+            <p class="text-xs font-semibold text-emerald-700">Pag-IBIG Fund (HDMF)</p>
+            <p class="text-lg font-extrabold text-slate-900">₱200 Max EE Share</p>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              <strong>2.0% Employee</strong> / <strong>2.0% Employer</strong> (1% EE if salary &le; ₱1,500) evaluated up to the ₱10,000 maximum monthly fund salary ceiling.
+            </p>
+            <p class="text-[11px] text-slate-500 pt-1 border-t border-slate-200/70">
+              Basis: HDMF Circular No. 460
+            </p>
+          </div>
+
+          <div class="rounded-xl border border-slate-200 bg-slate-50/60 p-4 space-y-2">
+            <p class="text-xs font-semibold text-emerald-700">BIR Withholding Tax</p>
+            <p class="text-lg font-extrabold text-slate-900">0% up to ₱20,833/mo</p>
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Graduated <strong>0% to 35%</strong> monthly tax table applied to taxable income (Gross pay minus mandatory SSS, PhilHealth, and Pag-IBIG employee shares).
+            </p>
+            <p class="text-[11px] text-slate-500 pt-1 border-t border-slate-200/70">
+              Basis: RA 10963 (TRAIN Law) Effective 2023+
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. How SuweldoTools Works Section -->
+      <section id="how-it-works" class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-8 shadow-xs space-y-6">
+        <div class="max-w-2xl">
+          <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
+            Why Use SuweldoTools
+          </h2>
+          <p class="mt-1 text-sm sm:text-base text-slate-600">
+            Built for Filipino employees, jobseekers, freelancers, and HR teams who need clear, verifiable payroll math.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+          <div class="space-y-2">
+            <p class="text-xs font-bold text-emerald-700">01. Privacy First</p>
+            <h3 class="text-base sm:text-lg font-bold text-slate-900">100% Client-Side Browser Execution</h3>
+            <p class="text-sm text-slate-600 leading-relaxed">
+              Every computation runs directly inside your device's browser using JavaScript. Your salary figures, allowances, and payroll inputs are never transmitted to or stored on any server.
+            </p>
+          </div>
+
+          <div class="space-y-2">
+            <p class="text-xs font-bold text-emerald-700">02. Verified Rules</p>
+            <h3 class="text-base sm:text-lg font-bold text-slate-900">Published Statutory Schedules</h3>
+            <p class="text-sm text-slate-600 leading-relaxed">
+              Calculations strictly follow official Philippine government schedules: RA 11199 &amp; SSS Circular No. 2024-006, RA 11223, HDMF Circular No. 460, DOLE PD 851, and BIR TRAIN Law tables.
+            </p>
+          </div>
+
+          <div class="space-y-2">
+            <p class="text-xs font-bold text-emerald-700">03. Mobile-Ready</p>
+            <h3 class="text-base sm:text-lg font-bold text-slate-900">Fast, Clean &amp; Easy to Read</h3>
+            <p class="text-sm text-slate-600 leading-relaxed">
+              Designed for phones, tablets, and desktops with instant preset buttons, monthly vs. per-cutoff (kinsenas) comparisons, and step-by-step worked examples.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. Helpful FAQs -->
+      <section class="space-y-6">
+        <div class="border-b border-slate-200 pb-4">
+          <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
+            Frequently Asked Questions
+          </h2>
+          <p class="mt-1 text-sm sm:text-base text-slate-600">
+            Common questions about using SuweldoTools and Philippine salary computation.
+          </p>
+        </div>
+
+        <div class="space-y-3">
+          <details class="group rounded-xl border border-slate-200 bg-white p-4 sm:p-5 transition open:shadow-xs">
+            <summary class="flex cursor-pointer items-center justify-between gap-3 font-semibold text-slate-900 group-open:text-emerald-700">
+              <span class="text-sm sm:text-base">What is SuweldoTools?</span>
+              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-300 text-xs text-slate-500 group-open:rotate-180 transition" aria-hidden="true">
+                ▼
+              </span>
+            </summary>
+            <div class="mt-3 text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3">
+              SuweldoTools is a free, web-based suite of salary and payroll calculators designed specifically for Philippine wage earners, jobseekers, freelancers, and human resource professionals.
+            </div>
+          </details>
+
+          <details class="group rounded-xl border border-slate-200 bg-white p-4 sm:p-5 transition open:shadow-xs">
+            <summary class="flex cursor-pointer items-center justify-between gap-3 font-semibold text-slate-900 group-open:text-emerald-700">
+              <span class="text-sm sm:text-base">Are these salary calculators completely free to use?</span>
+              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-300 text-xs text-slate-500 group-open:rotate-180 transition" aria-hidden="true">
+                ▼
+              </span>
+            </summary>
+            <div class="mt-3 text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3">
+              Yes. All salary calculation tools on SuweldoTools are 100% free with no sign-ups, subscriptions, or paywalls required.
+            </div>
+          </details>
+
+          <details class="group rounded-xl border border-slate-200 bg-white p-4 sm:p-5 transition open:shadow-xs">
+            <summary class="flex cursor-pointer items-center justify-between gap-3 font-semibold text-slate-900 group-open:text-emerald-700">
+              <span class="text-sm sm:text-base">Does SuweldoTools save or transmit my salary information?</span>
+              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-300 text-xs text-slate-500 group-open:rotate-180 transition" aria-hidden="true">
+                ▼
+              </span>
+            </summary>
+            <div class="mt-3 text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3">
+              No. All computations run entirely on your device's browser using client-side JavaScript. We do not store, log, or transmit your financial inputs to any server.
+            </div>
+          </details>
+
+          <details class="group rounded-xl border border-slate-200 bg-white p-4 sm:p-5 transition open:shadow-xs">
+            <summary class="flex cursor-pointer items-center justify-between gap-3 font-semibold text-slate-900 group-open:text-emerald-700">
+              <span class="text-sm sm:text-base">Which Philippine government deductions are supported?</span>
+              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-300 text-xs text-slate-500 group-open:rotate-180 transition" aria-hidden="true">
+                ▼
+              </span>
+            </summary>
+            <div class="mt-3 text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3">
+              Our tools compute mandatory employee deductions for the Social Security System (SSS), Philippine Health Insurance Corporation (PhilHealth), Home Development Mutual Fund (Pag-IBIG), and Bureau of Internal Revenue (BIR) withholding tax.
+            </div>
+          </details>
+
+          <details class="group rounded-xl border border-slate-200 bg-white p-4 sm:p-5 transition open:shadow-xs">
+            <summary class="flex cursor-pointer items-center justify-between gap-3 font-semibold text-slate-900 group-open:text-emerald-700">
+              <span class="text-sm sm:text-base">Can these calculators replace an employer's official payslip?</span>
+              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-300 text-xs text-slate-500 group-open:rotate-180 transition" aria-hidden="true">
+                ▼
+              </span>
+            </summary>
+            <div class="mt-3 text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3">
+              No. Our tools provide informational estimates based on standard statutory schedules. Company-specific factors such as loan amortizations, voluntary Pag-IBIG MP2 contributions, health card dependents, unpaid absences, and year-end annualization can cause your actual payroll to differ. Always verify with your company HR or payroll specialist.
+            </div>
+          </details>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer Component -->
+    <footer class="mt-12 sm:mt-16 border-t border-slate-200 bg-white text-slate-600 text-sm">
+      <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+        <div class="grid grid-cols-2 md:grid-cols-12 gap-x-6 gap-y-6 lg:gap-x-8 pb-8 border-b border-slate-100">
+          <!-- Brand Section -->
+          <div class="col-span-2 md:col-span-5 space-y-3">
+            <a href="/" class="inline-flex items-center gap-2.5 group rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2" aria-current="page">
+              <img
+                src="/assets/aistudio/suweldotools-logo-icon_7c91e4ab.svg"
+                alt="SuweldoTools logo"
+                width="32" height="32" class="h-8 w-8 shrink-0 object-contain rounded-md"
+              />
+              <span class="font-bold text-slate-900 text-base group-hover:text-emerald-700 transition">SuweldoTools</span>
+            </a>
+            <p class="text-xs sm:text-sm text-slate-500 max-w-sm leading-relaxed mt-1">
+              Fast, accurate, mobile-friendly salary tools and statutory contribution calculators for Filipino employees, freelancers, and HR professionals.
+            </p>
+            <p class="text-xs text-slate-400">
+              Domain: <a href="https://suweldotools.com/" class="text-slate-500 hover:text-emerald-700 hover:underline transition rounded-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">suweldotools.com</a>
+            </p>
+          </div>
+
+          <!-- Tools Section -->
+          <div class="col-span-1 md:col-span-3 space-y-3">
+            <p class="font-bold text-xs uppercase tracking-wider text-slate-900">Salary Tools</p>
+            <ul class="space-y-2.5 text-xs sm:text-sm">
+              <li>
+                <a href="/take-home-pay-calculator-philippines/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Take-Home Pay Calculator</a>
+              </li>
+              <li>
+                <a href="/13th-month-pay-calculator/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">13th Month Pay Calculator</a>
+              </li>
+              <li>
+                <a href="/sss-contribution-table-2026/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">SSS Contribution Table 2026</a>
+              </li>
+              <li>
+                <a href="/philhealth-contribution-calculator/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">PhilHealth Contribution Calculator</a>
+              </li>
+              <li>
+                <a href="/overtime-holiday-pay-calculator-philippines/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Overtime &amp; Holiday Pay Calculator</a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Company Section -->
+          <div class="col-span-1 md:col-span-2 space-y-3">
+            <p class="font-bold text-xs uppercase tracking-wider text-slate-900">Company</p>
+            <ul class="space-y-2.5 text-xs sm:text-sm">
+              <li>
+                <a href="/blog/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Blog</a>
+              </li>
+              <li>
+                <a href="/about/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">About Us</a>
+              </li>
+              <li>
+                <a href="/contact/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Contact</a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Legal Section -->
+          <div class="col-span-2 md:col-span-2 space-y-3">
+            <p class="font-bold text-xs uppercase tracking-wider text-slate-900">Legal</p>
+            <ul class="space-y-2.5 text-xs sm:text-sm">
+              <li>
+                <a href="/privacy-policy/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Privacy Policy</a>
+              </li>
+              <li>
+                <a href="/disclaimer/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Disclaimer</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Follow Us Section -->
+        <div class="py-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <p class="font-bold text-xs uppercase tracking-wider text-slate-900">Follow Us</p>
+          <div class="flex items-center gap-2.5">
+            <a
+              href="https://www.facebook.com/profile.php?id=61595908386922"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#1877F2] text-white shadow-xs transition-all duration-200 motion-safe:hover:-translate-y-0.5 hover:bg-[#166fe5] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1877F2] focus-visible:ring-offset-2"
+              aria-label="Follow SuweldoTools on Facebook"
+            >
+              <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
+              </svg>
+            </a>
+            <a
+              href="https://www.instagram.com/suweldotools/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-tr from-[#f09433] via-[#dc2743] to-[#bc1888] text-white shadow-xs transition-all duration-200 motion-safe:hover:-translate-y-0.5 hover:opacity-95 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#dc2743] focus-visible:ring-offset-2"
+              aria-label="Follow SuweldoTools on Instagram"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+              </svg>
+            </a>
+            <a
+              href="https://www.youtube.com/@suweldotools"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#FF0000] text-white shadow-xs transition-all duration-200 motion-safe:hover:-translate-y-0.5 hover:bg-[#e60000] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF0000] focus-visible:ring-offset-2"
+              aria-label="Subscribe to SuweldoTools on YouTube"
+            >
+              <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+              </svg>
+            </a>
+            <a
+              href="https://pin.it/4fRe9WNxE"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#E60023] text-white shadow-xs transition-all duration-200 motion-safe:hover:-translate-y-0.5 hover:bg-[#cc001f] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E60023] focus-visible:ring-offset-2"
+              aria-label="Follow SuweldoTools on Pinterest"
+            >
+              <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 384 512" aria-hidden="true">
+                <path d="M204 6.5C101.4 6.5 0 74.9 0 185.6C0 256 39.6 296 63.6 296c9.9 0 15.6-27.6 15.6-35.4c0-9.3-23.7-29.1-23.7-67.8c0-80.4 61.2-137.4 140.4-137.4c68.1 0 118.5 38.7 118.5 109.8c0 53.1-21.3 152.7-90.3 152.7c-24.9 0-46.2-18-46.2-43.8c0-37.8 26.4-74.4 26.4-113.4c0-66.2-93.9-54.2-93.9 25.8c0 16.8 2.1 35.4 9.6 50.7c-13.8 59.4-42 147.9-42 209.1c0 18.9 2.7 37.5 4.5 56.4c3.4 3.8 1.7 3.4 6.9 1.5c50.4-69 48.6-82.5 71.4-172.8c12.3 23.4 44.1 36 69.3 36c106.2 0 153.9-103.5 153.9-196.8C384 71.3 298.2 6.5 204 6.5" />
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        <div class="pt-5 text-center sm:text-left text-xs text-slate-500">
+          <p>&copy; 2026 SuweldoTools. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Mobile Navigation Script -->
+    <script src="/js/mobile-nav.js" defer></script>
+    <script type="module" src="/src/announcement-popup.ts"></script>
+  </body>
+</html>

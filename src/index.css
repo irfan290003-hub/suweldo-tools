@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@layer base {
+  html {
+    overflow-x: clip;
+  }
+
+  body {
+    overflow-x: clip;
+  }
+
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid #059669;
+    outline-offset: 2px;
+  }
+}
+
+/* Mobile Navigation Drawer Transitions & Background Scroll Lock */
+header.mobile-nav-active {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 50 !important;
+}
+
+#mobileNavigationPanel {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease-out;
+  will-change: transform, opacity;
+}
+
+#mobileMenuBackdrop {
+  height: 100vh;
+  height: 100dvh;
+  transition: opacity 0.2s ease-out;
+  will-change: opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #mobileNavigationPanel,
+  #mobileMenuBackdrop {
+    transition: none !important;
+  }
+}
+
+html.mobile-nav-locked,
+body.mobile-nav-locked {
+  overflow: hidden !important;
+  touch-action: none;
+}
+

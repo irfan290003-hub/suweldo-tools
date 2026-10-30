@@ -1,0 +1,1567 @@
+<!doctype html>
+<html lang="en-PH">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blog Admin | SuweldoTools</title>
+  <meta name="description" content="SuweldoTools internal bilingual blog administration interface." />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="stylesheet" href="/src/index.css" />
+  <script type="module" src="/src/lib/supabase.ts?v=step19-announcement-ready"></script>
+  <script src="/js/blog-admin.js?v=step19-announcement-ready" defer></script>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans antialiased">
+  <!-- Skip Link for Keyboard Accessibility -->
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:bg-emerald-700 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:text-sm focus:font-semibold focus:shadow-md">
+    Skip to main content
+  </a>
+
+  <!-- Top Admin Header & Navigation -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between py-3.5 gap-3">
+        <!-- Brand & Admin Workspace Context -->
+        <div class="flex items-center justify-between">
+          <div class="flex flex-wrap items-center gap-2.5">
+            <a href="/" class="text-xl font-bold text-emerald-700 tracking-tight hover:text-emerald-800 transition-colors whitespace-nowrap shrink-0" title="Return to SuweldoTools Homepage">
+              SuweldoTools
+            </a>
+            <span class="text-slate-300" aria-hidden="true">/</span>
+            <span class="text-sm font-semibold text-slate-700 tracking-tight whitespace-nowrap shrink-0">Blog Admin</span>
+            <span
+              id="supabase-connection-badge"
+              role="status"
+              aria-live="polite"
+              class="text-xs font-medium text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded whitespace-nowrap shrink-0"
+            >
+              Supabase not configured
+            </span>
+            <span
+              id="admin-auth-badge"
+              role="status"
+              aria-live="polite"
+              class="text-xs font-medium text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded whitespace-nowrap shrink-0"
+            >
+              Checking session…
+            </span>
+          </div>
+        </div>
+
+        <!-- Primary Admin Navigation, Language Filter & Logout (Shown only to verified admins) -->
+        <div id="admin-header-controls" aria-hidden="true" class="hidden flex-wrap items-center justify-between md:justify-end gap-3">
+          <nav aria-label="Blog Admin Navigation" class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
+            <button
+              type="button"
+              data-nav-target="dashboard"
+              aria-current="page"
+              class="admin-nav-btn px-3 py-1.5 rounded-md text-sm font-semibold transition-colors bg-white text-emerald-700 shadow-xs whitespace-nowrap shrink-0"
+            >
+              Dashboard
+            </button>
+            <button
+              type="button"
+              data-nav-target="all-posts"
+              class="admin-nav-btn px-3 py-1.5 rounded-md text-sm font-medium transition-colors text-slate-700 hover:text-slate-900 hover:bg-white/60 whitespace-nowrap shrink-0"
+            >
+              All Posts
+            </button>
+            <button
+              type="button"
+              data-nav-target="create-post"
+              class="admin-nav-btn px-3 py-1.5 rounded-md text-sm font-medium transition-colors text-slate-700 hover:text-slate-900 hover:bg-white/60 whitespace-nowrap shrink-0"
+            >
+              Create Post
+            </button>
+            <button
+              type="button"
+              data-nav-target="announcement"
+              class="admin-nav-btn px-3 py-1.5 rounded-md text-sm font-medium transition-colors text-slate-700 hover:text-slate-900 hover:bg-white/60 whitespace-nowrap shrink-0"
+            >
+              Announcement
+            </button>
+          </nav>
+
+          <!-- Signed-in Admin Identity & Logout Button -->
+          <div class="flex items-center gap-2.5 pl-3 border-l border-slate-200">
+            <span
+              id="admin-user-email"
+              class="text-xs font-mono text-slate-600 truncate max-w-[190px]"
+              title="Authenticated administrator email"
+            ></span>
+            <button
+              type="button"
+              id="btn-admin-logout"
+              class="inline-flex items-center justify-center gap-1.5 bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-300 font-semibold text-xs px-3 py-1.5 rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0"
+            >
+              Log Out
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main id="main-content" class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <p id="supabase-connection-detail" class="sr-only" aria-live="polite">
+      Supabase not configured — set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment to test live connectivity.
+    </p>
+
+    <!-- ========================================== -->
+    <!-- SECTION 0: SUPABASE ADMIN AUTH GATE        -->
+    <!-- ========================================== -->
+    <section id="section-admin-auth" aria-labelledby="admin-auth-heading" class="min-h-[56vh] flex flex-col justify-center py-6 sm:py-10">
+      <!-- Session Checking State -->
+      <div
+        id="auth-loading-state"
+        role="status"
+        aria-live="polite"
+        class="w-full max-w-md mx-auto bg-white border border-slate-200 rounded-2xl shadow-xs p-6 sm:p-8 text-center space-y-3"
+      >
+        <div class="inline-flex items-center justify-center w-11 h-11 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+            <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z"></path>
+          </svg>
+        </div>
+        <p class="text-sm font-semibold text-slate-900">Verifying administrator session…</p>
+        <p class="text-xs text-slate-500">
+          Checking Supabase Auth status and <code class="font-mono text-[11px]">public.blog_admins</code> authorization.
+        </p>
+      </div>
+
+      <!-- Email / Password Login Card -->
+      <div
+        id="auth-login-card"
+        class="hidden w-full max-w-md mx-auto bg-white border border-slate-200/90 rounded-2xl shadow-sm overflow-hidden"
+      >
+        <div class="px-6 py-6 sm:px-8 sm:py-7 border-b border-slate-200 bg-slate-50/70">
+          <div class="flex items-center gap-2.5">
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-600/10 text-emerald-700 border border-emerald-600/20 shrink-0" aria-hidden="true">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+              </svg>
+            </span>
+            <div>
+              <p class="text-[11px] font-semibold uppercase tracking-wider text-emerald-700">
+                SuweldoTools Internal Workspace
+              </p>
+              <h1 id="admin-auth-heading" class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                Administrator Sign In
+              </h1>
+            </div>
+          </div>
+          <p class="text-xs text-slate-600 mt-3 leading-relaxed">
+            Enter your administrator credentials to continue. Access is granted only after your account is verified in <code class="font-mono text-[11px] bg-white border border-slate-200 px-1.5 py-0.5 rounded text-slate-700">public.blog_admins</code>.
+          </p>
+        </div>
+
+        <div class="p-6 sm:p-8 space-y-5">
+          <!-- Auth Status / Error Alert Banner (Hidden by default; shown only after an explicit auth/logout event) -->
+          <div
+            id="auth-message-banner"
+            role="alert"
+            aria-live="assertive"
+            hidden
+            class="hidden rounded-xl border p-3.5 text-xs leading-relaxed"
+          >
+            <p id="auth-message-title" class="font-semibold"></p>
+            <p id="auth-message-body" class="mt-0.5"></p>
+          </div>
+
+          <form id="admin-login-form" class="space-y-5" novalidate autocomplete="on">
+            <div class="space-y-1.5">
+              <label for="admin-login-email" class="block text-xs font-semibold text-slate-800">
+                Administrator Email <span class="text-red-600" aria-hidden="true">*</span>
+              </label>
+              <input
+                type="email"
+                id="admin-login-email"
+                name="email"
+                value=""
+                required
+                autocomplete="username"
+                inputmode="email"
+                placeholder="Enter your administrator email"
+                class="w-full bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm rounded-xl px-3.5 py-2.5 shadow-2xs transition-colors focus:outline-none focus:border-emerald-600 focus:ring-3 focus:ring-emerald-600/15 disabled:bg-slate-100 disabled:text-slate-500"
+              />
+            </div>
+
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label for="admin-login-password" class="block text-xs font-semibold text-slate-800">
+                  Password <span class="text-red-600" aria-hidden="true">*</span>
+                </label>
+                <button
+                  type="button"
+                  id="btn-toggle-password"
+                  aria-controls="admin-login-password"
+                  aria-pressed="false"
+                  class="text-xs font-semibold text-emerald-700 hover:text-emerald-800 rounded px-1 py-0.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 cursor-pointer"
+                >
+                  Show password
+                </button>
+              </div>
+              <input
+                type="password"
+                id="admin-login-password"
+                name="password"
+                value=""
+                required
+                autocomplete="current-password"
+                placeholder="Enter your password"
+                class="w-full bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 text-sm rounded-xl px-3.5 py-2.5 shadow-2xs transition-colors focus:outline-none focus:border-emerald-600 focus:ring-3 focus:ring-emerald-600/15 disabled:bg-slate-100 disabled:text-slate-500"
+              />
+            </div>
+
+            <div class="pt-1">
+              <button
+                type="submit"
+                id="btn-admin-login"
+                class="w-full inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:bg-slate-300 disabled:text-slate-500 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-xs transition-colors cursor-pointer focus:outline-none focus-visible:ring-3 focus-visible:ring-emerald-600/30 disabled:cursor-not-allowed"
+              >
+                <span id="btn-admin-login-label">Sign In to Blog Admin</span>
+              </button>
+            </div>
+          </form>
+
+          <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+            <span>Protected by Supabase Auth &amp; RLS</span>
+            <a href="/" class="font-medium text-slate-600 hover:text-emerald-700 transition-colors">
+              &larr; Back to Calculator
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- PROTECTED ADMIN WORKSPACE (ADMIN ONLY)     -->
+    <!-- ========================================== -->
+    <div id="admin-dashboard-workspace" aria-hidden="true" class="hidden space-y-6">
+
+      <!-- Active Editing Session Resume Bar (Shown on Dashboard / All Posts when an unsaved or active post is open in Editor) -->
+      <div
+        id="active-editor-session-banner"
+        role="status"
+        aria-live="polite"
+        class="hidden bg-emerald-50/90 border border-emerald-200 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+      >
+        <div class="text-xs text-emerald-950">
+          <span class="font-bold uppercase tracking-wider text-emerald-800 mr-1.5">Active Editor Session:</span>
+          <span id="active-editor-session-text" class="font-medium">You have an active post open in the editor.</span>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            id="btn-resume-editor-session"
+            class="inline-flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-3 py-1.5 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
+          >
+            Return to Editor &rarr;
+          </button>
+        </div>
+      </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 1: ADMIN DASHBOARD VIEW            -->
+    <!-- ========================================== -->
+    <section id="section-dashboard" aria-labelledby="dashboard-heading" class="space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-5">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wider text-emerald-700">Editorial Overview</p>
+          <h2 id="dashboard-heading" class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mt-0.5">
+            Blog Dashboard
+          </h2>
+          <p class="text-sm text-slate-600 mt-1">
+            Overview of English (<code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">/blog/</code>) and Filipino (<code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">/tl/blog/</code>) articles and drafts.
+          </p>
+        </div>
+        <div class="flex items-center gap-3 self-start sm:self-center">
+          <button
+            type="button"
+            id="btn-create-new-post"
+            class="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Create New Post
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Database Summary Cards -->
+      <div id="dashboard-metrics-grid" class="grid grid-cols-1 sm:grid-cols-3 gap-4" role="region" aria-label="Blog post summary metrics">
+        <!-- Total Posts -->
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-2xs">
+          <div class="flex items-baseline justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Posts</span>
+            <span class="text-[11px] font-medium text-slate-500">All Languages</span>
+          </div>
+          <p id="metric-total-posts" class="text-3xl font-bold text-slate-900 mt-2 tabular-nums">0</p>
+          <p id="metric-total-posts-sub" class="text-xs text-slate-500 mt-1">
+            0 English, 0 Filipino
+          </p>
+        </div>
+
+        <!-- Published Posts -->
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-2xs">
+          <div class="flex items-baseline justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Published Posts</span>
+            <span class="text-[11px] font-medium text-emerald-700">Live</span>
+          </div>
+          <p id="metric-published-posts" class="text-3xl font-bold text-emerald-700 mt-2 tabular-nums">0</p>
+          <p class="text-xs text-slate-500 mt-1">
+            Ready for public blog pages
+          </p>
+        </div>
+
+        <!-- Draft Posts -->
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-2xs">
+          <div class="flex items-baseline justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Draft Posts</span>
+            <span class="text-[11px] font-medium text-amber-700">In Progress</span>
+          </div>
+          <p id="metric-draft-posts" class="text-3xl font-bold text-amber-700 mt-2 tabular-nums">0</p>
+          <p class="text-xs text-slate-500 mt-1">
+            Saved privately in admin
+          </p>
+        </div>
+      </div>
+
+      <!-- Recent Posts Summary Card (Dashboard Only) -->
+      <div id="dashboard-recent-posts-card" class="bg-white border border-slate-200 rounded-xl shadow-2xs overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Recent Posts</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Most recently updated drafts and published articles.</p>
+          </div>
+          <button
+            type="button"
+            id="btn-dashboard-view-all-posts"
+            class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-800 cursor-pointer self-start sm:self-center whitespace-nowrap"
+          >
+            View All Posts &rarr;
+          </button>
+        </div>
+        <div id="dashboard-recent-posts-body" class="divide-y divide-slate-200 text-sm">
+          <div class="p-6 text-center text-sm text-slate-500">Loading recent posts…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SECTION 2: ALL POSTS VIEW                  -->
+    <!-- ========================================== -->
+    <section id="section-posts-table" aria-labelledby="posts-table-heading" class="hidden bg-white border border-slate-200 rounded-xl shadow-2xs overflow-hidden">
+      <div class="p-5 sm:p-6 border-b border-slate-200 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h2 id="posts-table-heading" class="text-lg font-bold text-slate-900">
+              All Posts
+            </h2>
+            <p class="text-xs text-slate-600 mt-0.5">
+              Search and filter posts by title, slug, language, or status. Select <strong>Edit in Editor</strong> to update a post, <strong>Publish</strong> a draft, or <strong>Delete</strong> a post permanently.
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2.5 self-start sm:self-center">
+            <div class="text-xs text-slate-500 font-medium" id="table-results-count" aria-live="polite">
+              Loading posts…
+            </div>
+            <button
+              type="button"
+              id="btn-refresh-posts"
+              class="inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-300 px-3 py-2 rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0"
+            >
+              Refresh Posts
+            </button>
+            <button
+              type="button"
+              id="btn-table-create-new-post"
+              class="inline-flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-3.5 py-2 rounded-lg shadow-2xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
+            >
+              + Create New Post
+            </button>
+          </div>
+        </div>
+
+        <!-- Table Fetch Error / Retry Banner -->
+        <div
+          id="posts-table-error-banner"
+          role="alert"
+          aria-live="assertive"
+          class="hidden rounded-xl border border-red-300 bg-red-50 text-red-900 p-3.5 text-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+        >
+          <div>
+            <p class="font-bold">Could not load blog posts from Supabase</p>
+            <p id="posts-table-error-message" class="mt-0.5 text-red-800"></p>
+          </div>
+          <button
+            type="button"
+            id="btn-retry-fetch-posts"
+            class="inline-flex items-center justify-center self-start sm:self-center bg-white hover:bg-red-100 text-red-800 border border-red-300 font-semibold text-xs px-3 py-1.5 rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0"
+          >
+            Retry Loading Posts
+          </button>
+        </div>
+
+        <!-- Table-Level CRUD Operation Feedback Banner (Shown after Publish / Delete actions) -->
+        <div
+          id="posts-table-crud-feedback"
+          role="status"
+          aria-live="polite"
+          class="hidden rounded-xl border p-3.5 text-xs"
+        >
+          <p id="posts-table-crud-feedback-title" class="font-bold"></p>
+          <p id="posts-table-crud-feedback-body" class="mt-0.5 leading-relaxed"></p>
+        </div>
+
+        <!-- Search & Filter Controls -->
+        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 pt-1">
+          <div class="sm:col-span-6">
+            <label for="post-search-input" class="block text-xs font-semibold text-slate-700 mb-1">
+              Search Posts
+            </label>
+            <div class="relative">
+              <input
+                type="search"
+                id="post-search-input"
+                placeholder="Search by post title or URL slug..."
+                class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg pl-3.5 pr-8 py-2 focus:bg-white focus:border-emerald-600"
+              />
+            </div>
+          </div>
+
+          <div class="sm:col-span-3">
+            <label for="table-language-select" class="block text-xs font-semibold text-slate-700 mb-1">
+              Language Filter
+            </label>
+            <select
+              id="table-language-select"
+              class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg px-3 py-2 focus:bg-white focus:border-emerald-600"
+            >
+              <option value="all">All Languages</option>
+              <option value="en">English (en)</option>
+              <option value="tl">Filipino (tl)</option>
+            </select>
+          </div>
+
+          <div class="sm:col-span-3">
+            <label for="table-status-select" class="block text-xs font-semibold text-slate-700 mb-1">
+              Status Filter
+            </label>
+            <select
+              id="table-status-select"
+              class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg px-3 py-2 focus:bg-white focus:border-emerald-600"
+            >
+              <option value="all">All Statuses</option>
+              <option value="published">Published</option>
+              <option value="draft">Draft</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Responsive Table -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider text-slate-600">
+              <th scope="col" class="py-3.5 pl-5 pr-3">Title &amp; URL Slug</th>
+              <th scope="col" class="py-3.5 px-3">Language</th>
+              <th scope="col" class="py-3.5 px-3">Status</th>
+              <th scope="col" class="py-3.5 px-3">Last Updated</th>
+              <th scope="col" class="py-3.5 pl-3 pr-5 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="posts-table-body" class="divide-y divide-slate-200 text-sm">
+            <!-- Populated by /js/blog-admin.js from public.blog_posts after admin authorization -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SECTION 3: DEDICATED CREATE / EDIT VIEW    -->
+    <!-- ========================================== -->
+    <section id="section-post-editor" aria-labelledby="editor-heading" class="hidden bg-white border border-slate-200 rounded-xl shadow-2xs overflow-hidden">
+      <div class="p-5 sm:p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <span id="editor-mode-label" class="text-xs font-semibold uppercase tracking-wider text-emerald-700">
+            Create New Post
+          </span>
+          <h2 id="editor-heading" class="text-xl font-bold text-slate-900 mt-0.5">
+            Create New Blog Post
+          </h2>
+          <p class="text-xs text-slate-600 mt-0.5">
+            Required fields are marked with <span class="text-red-600 font-bold" aria-hidden="true">*</span>. Save as a draft or publish when ready.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            id="btn-back-to-posts"
+            class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-300 px-3 py-1.5 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
+          >
+            &larr; Back to All Posts
+          </button>
+          <button
+            type="button"
+            id="btn-reset-form"
+            class="text-xs font-semibold text-slate-600 hover:text-slate-900 border border-slate-300 hover:bg-slate-50 px-3 py-1.5 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
+          >
+            New Post / Clear Form
+          </button>
+        </div>
+      </div>
+
+      <!-- Active Post Status Bar (Shown when editing an existing post; raw UUIDs hidden from normal UI) -->
+      <div
+        id="editor-record-meta"
+        class="hidden mx-5 sm:mx-6 mt-5 p-3.5 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-700 flex flex-wrap items-center justify-between gap-2"
+      >
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span
+            id="editor-record-status-badge"
+            class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold border"
+          ></span>
+          <span id="editor-record-timestamps" class="text-slate-600"></span>
+          <code id="editor-record-id" class="hidden"></code>
+          <code id="editor-record-group-id" class="hidden"></code>
+        </div>
+      </div>
+
+      <!-- Accessible Validation Feedback Banner -->
+      <div
+        id="form-validation-summary"
+        role="alert"
+        aria-live="assertive"
+        class="hidden mx-5 sm:mx-6 mt-5 p-4 rounded-xl border border-red-300 bg-red-50 text-red-900 text-sm"
+      >
+        <p class="font-bold">Please fix the following fields before proceeding:</p>
+        <ul id="form-validation-list" class="list-disc list-inside mt-1.5 space-y-1 text-xs text-red-800"></ul>
+      </div>
+
+      <div
+        id="form-validation-success"
+        role="status"
+        aria-live="polite"
+        class="hidden mx-5 sm:mx-6 mt-5 p-4 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-900 text-sm"
+      >
+        <p class="font-semibold">All required post and SEO metadata fields pass validation.</p>
+      </div>
+
+      <!-- Supabase Save / Publish Operation Feedback Banner (Shown only after Supabase responds) -->
+      <div
+        id="form-crud-feedback"
+        role="status"
+        aria-live="polite"
+        class="hidden mx-5 sm:mx-6 mt-5 p-4 rounded-xl border text-sm"
+      >
+        <p id="form-crud-feedback-title" class="font-bold"></p>
+        <p id="form-crud-feedback-body" class="text-xs mt-1 leading-relaxed"></p>
+      </div>
+
+      <form id="blog-post-form" class="p-5 sm:p-6 space-y-6" novalidate autocomplete="off">
+        <!-- Row 1: Language Selector & Post Title -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
+          <!-- Language Selector -->
+          <div class="md:col-span-4">
+            <label for="post-language" class="block text-sm font-semibold text-slate-800 mb-1.5">
+              Language <span class="text-red-600" aria-hidden="true">*</span>
+            </label>
+            <select
+              id="post-language"
+              name="language"
+              required
+              aria-describedby="post-language-help"
+              class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-lg px-3.5 py-2.5 focus:border-emerald-600"
+            >
+              <option value="en">English (en-PH)</option>
+              <option value="tl">Filipino (tl-PH)</option>
+            </select>
+            <p id="post-language-help" class="text-xs text-slate-500 mt-1">
+              Determines URL prefix (<code class="text-[11px] bg-slate-100 px-1 rounded">/blog/</code> vs <code class="text-[11px] bg-slate-100 px-1 rounded">/tl/blog/</code>).
+            </p>
+          </div>
+
+          <!-- Post Title -->
+          <div class="md:col-span-8">
+            <label for="post-title" class="block text-sm font-semibold text-slate-800 mb-1.5">
+              Post Title <span class="text-red-600" aria-hidden="true">*</span>
+            </label>
+            <input
+              type="text"
+              id="post-title"
+              name="title"
+              required
+              placeholder="e.g., How to Compute Your 2026 Net Take-Home Pay in the Philippines"
+              aria-describedby="post-title-error"
+              class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-lg px-3.5 py-2.5 focus:border-emerald-600"
+            />
+            <p id="post-title-error" class="hidden text-xs text-red-600 font-medium mt-1" role="alert"></p>
+          </div>
+        </div>
+
+        <!-- Row 2: URL Slug -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label for="post-slug" class="block text-sm font-semibold text-slate-800">
+              URL Slug <span class="text-red-600" aria-hidden="true">*</span>
+            </label>
+            <button
+              type="button"
+              id="btn-generate-slug"
+              class="text-xs font-semibold text-emerald-700 hover:text-emerald-800 underline cursor-pointer"
+            >
+              Generate slug from Post Title
+            </button>
+          </div>
+          <div class="flex flex-col sm:flex-row sm:items-center rounded-lg border border-slate-300 bg-white overflow-hidden focus-within:ring-2 focus-within:ring-emerald-600">
+            <span
+              id="slug-prefix-display"
+              class="bg-slate-100 text-slate-600 text-xs font-mono px-3.5 py-2.5 border-b sm:border-b-0 sm:border-r border-slate-300 select-none shrink-0"
+            >
+              https://suweldotools.com/blog/
+            </span>
+            <input
+              type="text"
+              id="post-slug"
+              name="slug"
+              required
+              pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$"
+              placeholder="how-to-compute-2026-net-take-home-pay"
+              aria-describedby="post-slug-help post-slug-error"
+              class="w-full text-slate-900 text-sm font-mono px-3.5 py-2.5 border-0 focus:outline-none"
+            />
+          </div>
+          <p id="post-slug-help" class="text-xs text-slate-500 mt-1">
+            Use lowercase letters, numbers, and hyphens only (no spaces or special characters). Must be unique per language.
+          </p>
+          <p id="post-slug-error" class="hidden text-xs text-red-600 font-medium mt-1" role="alert"></p>
+        </div>
+
+        <!-- Row 2B: Optional Author Name -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label for="post-author-name" class="block text-sm font-semibold text-slate-800">
+              Author Name <span class="text-xs font-normal text-slate-500">(Optional)</span>
+            </label>
+            <span id="author-name-char-count" class="text-xs text-slate-500 tabular-nums">0 / 120 chars</span>
+          </div>
+          <input
+            type="text"
+            id="post-author-name"
+            name="authorName"
+            maxlength="120"
+            placeholder="e.g., Juan Dela Cruz (leave blank to display SuweldoTools)"
+            aria-describedby="post-author-name-help post-author-name-error"
+            class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-lg px-3.5 py-2.5 focus:border-emerald-600"
+          />
+          <p id="post-author-name-help" class="text-xs text-slate-500 mt-1">
+            Displayed as the article byline and <code class="text-[11px] bg-slate-100 px-1 rounded">BlogPosting.author</code>. If left blank, defaults to <strong>SuweldoTools</strong>.
+          </p>
+          <p id="post-author-name-error" class="hidden text-xs text-red-600 font-medium mt-1" role="alert"></p>
+        </div>
+
+        <!-- Row 3: Short Excerpt -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label for="post-excerpt" class="block text-sm font-semibold text-slate-800">
+              Short Excerpt <span class="text-red-600" aria-hidden="true">*</span>
+            </label>
+            <span id="excerpt-char-count" class="text-xs text-slate-500 tabular-nums">0 / 240 chars</span>
+          </div>
+          <textarea
+            id="post-excerpt"
+            name="excerpt"
+            rows="2"
+            required
+            placeholder="A concise 1–2 sentence summary displayed on blog index cards and article intros..."
+            aria-describedby="post-excerpt-error"
+            class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-lg px-3.5 py-2.5 focus:border-emerald-600"
+          ></textarea>
+          <p id="post-excerpt-error" class="hidden text-xs text-red-600 font-medium mt-1" role="alert"></p>
+        </div>
+
+        <!-- Row 4: Article Content Editor (Simple Textarea) -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label for="post-content" class="block text-sm font-semibold text-slate-800">
+              Article Content <span class="text-red-600" aria-hidden="true">*</span>
+            </label>
+            <span id="content-word-count" class="text-xs text-slate-500 tabular-nums">0 words</span>
+          </div>
+          <textarea
+            id="post-content"
+            name="content"
+            rows="10"
+            required
+            placeholder="Write the full article content here (separate paragraphs with a blank line)..."
+            aria-describedby="post-content-help post-content-error"
+            class="w-full bg-white border border-slate-300 text-slate-900 text-sm font-mono leading-relaxed rounded-lg px-3.5 py-3 focus:border-emerald-600"
+          ></textarea>
+          <p id="post-content-help" class="text-xs text-slate-500 mt-1">
+            Separate paragraphs with a blank line. All content is safely escaped when rendered.
+          </p>
+          <p id="post-content-error" class="hidden text-xs text-red-600 font-medium mt-1" role="alert"></p>
+        </div>
+
+        <!-- Row 5: SEO Metadata Fieldset -->
+        <fieldset class="border border-slate-200 rounded-xl p-4 sm:p-5 bg-slate-50/60 space-y-4">
+          <legend class="text-sm font-bold text-slate-900 px-2">
+            SEO Metadata
+          </legend>
+
+          <!-- SEO Title -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="post-seo-title" class="block text-sm font-semibold text-slate-800">
+                SEO Title <span class="text-red-600" aria-hidden="true">*</span>
+              </label>
+              <span id="seo-title-char-count" class="text-xs text-slate-500 tabular-nums">0 / 60 chars recommended</span>
+            </div>
+            <input
+              type="text"
+              id="post-seo-title"
+              name="seoTitle"
+              required
+              placeholder="e.g., How to Compute Net Take-Home Pay in the Philippines (2026) | SuweldoTools"
+              aria-describedby="post-seo-title-help post-seo-title-error"
+              class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-lg px-3.5 py-2.5 focus:border-emerald-600"
+            />
+            <p id="post-seo-title-help" class="text-xs text-slate-500 mt-1">
+              Aim for 50–60 characters for optimal display in Google search results.
+            </p>
+            <p id="post-seo-title-error" class="hidden text-xs text-red-600 font-medium mt-1" role="alert"></p>
+          </div>
+
+          <!-- Meta Description -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="post-meta-description" class="block text-sm font-semibold text-slate-800">
+                Meta Description <span class="text-red-600" aria-hidden="true">*</span>
+              </label>
+              <span id="meta-desc-char-count" class="text-xs text-slate-500 tabular-nums">0 / 160 chars recommended</span>
+            </div>
+            <textarea
+              id="post-meta-description"
+              name="metaDescription"
+              rows="3"
+              required
+              placeholder="Write a clear, natural 120–160 character summary for search engines..."
+              aria-describedby="post-meta-description-help post-meta-description-error"
+              class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-lg px-3.5 py-2.5 focus:border-emerald-600"
+            ></textarea>
+            <p id="post-meta-description-help" class="text-xs text-slate-500 mt-1">
+              Aim for 120–160 characters with clear Philippines payroll context.
+            </p>
+            <p id="post-meta-description-error" class="hidden text-xs text-red-600 font-medium mt-1" role="alert"></p>
+          </div>
+        </fieldset>
+
+        <!-- Row 6: Featured Image Upload, URL, and Alt Text -->
+        <fieldset class="border border-slate-200 rounded-xl p-4 sm:p-5 bg-slate-50/60 space-y-4">
+          <legend class="text-sm font-bold text-slate-900 px-2">
+            Featured Image
+          </legend>
+
+          <!-- Upload Image from Computer OR Enter URL -->
+          <div class="bg-white border border-slate-200 rounded-xl p-3.5 sm:p-4 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <label for="post-image-file-input" class="block text-xs font-semibold text-slate-800">
+                  Upload Image File (Supabase Storage: <code class="text-[11px] font-mono bg-slate-100 px-1 py-0.5 rounded">blog-images/featured/</code>)
+                </label>
+                <p id="post-image-file-help" class="text-[11px] text-slate-500 mt-0.5">
+                  Supported formats: JPEG (<code>.jpg</code>/<code>.jpeg</code>), PNG (<code>.png</code>), or WebP (<code>.webp</code>). Max file size: <strong>5 MB</strong>.
+                </p>
+              </div>
+              <button
+                type="button"
+                id="btn-clear-image"
+                class="hidden self-start sm:self-center inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-red-700 bg-white hover:bg-red-50 border border-slate-300 hover:border-red-200 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer whitespace-nowrap shrink-0"
+              >
+                Clear Image
+              </button>
+            </div>
+
+            <div class="flex flex-col sm:flex-row sm:items-center gap-2.5">
+              <input
+                type="file"
+                id="post-image-file-input"
+                accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+                aria-describedby="post-image-file-help"
+                class="block w-full text-xs text-slate-700 file:mr-3 file:py-2 file:px-3.5 file:rounded-lg file:border file:border-slate-300 file:text-xs file:font-semibold file:bg-slate-50 file:text-slate-800 hover:file:bg-slate-100 file:cursor-pointer cursor-pointer border border-slate-200 rounded-lg p-1 bg-slate-50/50"
+              />
+              <button
+                type="button"
+                id="btn-upload-image"
+                disabled
+                class="inline-flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-500 text-white font-semibold text-xs px-4 py-2.5 rounded-lg shadow-2xs transition-colors cursor-pointer disabled:cursor-not-allowed whitespace-nowrap shrink-0"
+              >
+                <span id="btn-upload-image-label">Upload Image</span>
+              </button>
+            </div>
+
+            <!-- Upload Progress / Status / Error Banner -->
+            <div
+              id="post-image-upload-status"
+              role="status"
+              aria-live="polite"
+              class="hidden rounded-lg border px-3 py-2.5 text-xs leading-relaxed"
+            >
+              <p id="post-image-upload-status-title" class="font-semibold"></p>
+              <p id="post-image-upload-status-body" class="mt-0.5 break-all"></p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Featured Image URL -->
+            <div>
+              <label for="post-image-url" class="block text-sm font-semibold text-slate-800 mb-1.5">
+                Featured Image URL
+              </label>
+              <input
+                type="url"
+                id="post-image-url"
+                name="featuredImageUrl"
+                placeholder="https://suweldotools.com/images/blog/payroll-guide-2026.jpg"
+                aria-describedby="post-image-url-help post-image-url-error"
+                class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-lg px-3.5 py-2.5 focus:border-emerald-600"
+              />
+              <p id="post-image-url-help" class="text-xs text-slate-500 mt-1">
+                Populated automatically after uploading, or enter an existing full URL (<code class="text-[11px]">https://...</code>) or root-relative path (<code class="text-[11px]">/images/...</code>).
+              </p>
+              <p id="post-image-url-error" class="hidden text-xs text-red-600 font-medium mt-1" role="alert"></p>
+            </div>
+
+            <!-- Featured Image Alt Text -->
+            <div>
+              <label for="post-image-alt" class="block text-sm font-semibold text-slate-800 mb-1.5">
+                Featured Image Alt Text
+              </label>
+              <input
+                type="text"
+                id="post-image-alt"
+                name="featuredImageAlt"
+                placeholder="e.g., Breakdown of 2026 SSS, PhilHealth, Pag-IBIG, and BIR deductions"
+                aria-describedby="post-image-alt-help post-image-alt-error"
+                class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-lg px-3.5 py-2.5 focus:border-emerald-600"
+              />
+              <p id="post-image-alt-help" class="text-xs text-slate-500 mt-1">
+                Required whenever a Featured Image URL is provided (must be empty if URL is empty).
+              </p>
+              <p id="post-image-alt-error" class="hidden text-xs text-red-600 font-medium mt-1" role="alert"></p>
+            </div>
+          </div>
+
+          <!-- Live Image Thumbnail Preview -->
+          <div
+            id="post-image-preview-card"
+            class="hidden bg-white border border-slate-200 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center gap-3.5"
+          >
+            <div class="w-full sm:w-40 h-28 bg-slate-100 border border-slate-200 rounded-lg overflow-hidden flex items-center justify-center shrink-0">
+              <img
+                id="post-image-preview-img"
+                src=""
+                alt="Featured image thumbnail preview"
+                class="w-full h-full object-cover hidden"
+              />
+              <span
+                id="post-image-preview-error"
+                class="hidden text-[11px] text-slate-500 px-2 text-center"
+              >
+                Preview unavailable for this URL
+              </span>
+            </div>
+            <div class="min-w-0 flex-1 space-y-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <span
+                  id="post-image-preview-badge"
+                  class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200"
+                >
+                  Active Image URL
+                </span>
+              </div>
+              <p id="post-image-preview-source" class="text-xs font-mono text-slate-600 break-all"></p>
+              <p id="post-image-preview-alt-summary" class="text-xs text-slate-500"></p>
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Row 7: Article FAQs Repeater (Optional) -->
+        <fieldset id="post-faqs-fieldset" class="border border-slate-200 rounded-xl p-4 sm:p-5 bg-slate-50/60 space-y-4">
+          <legend class="text-sm font-bold text-slate-900 px-2">
+            Frequently Asked Questions (FAQs) <span class="text-xs font-normal text-slate-500">(Optional)</span>
+          </legend>
+
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <p class="text-xs text-slate-600 leading-relaxed">
+              Add question-and-answer items to display an accessible FAQ accordion on the published article page and generate matching <code class="text-[11px] font-mono bg-slate-100 px-1 py-0.5 rounded">FAQPage</code> JSON-LD structured data.
+            </p>
+            <button
+              type="button"
+              id="btn-add-faq"
+              class="inline-flex items-center justify-center gap-1.5 bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-300 font-semibold text-xs px-3.5 py-2 rounded-lg shadow-2xs transition-colors cursor-pointer whitespace-nowrap shrink-0"
+            >
+              <span aria-hidden="true">+</span>
+              <span>Add FAQ Item</span>
+            </button>
+          </div>
+
+          <div id="post-faqs-empty" class="bg-white border border-dashed border-slate-300 rounded-xl p-4 text-center text-xs text-slate-500">
+            No FAQ items added yet. Click <strong>+ Add FAQ Item</strong> to include article FAQs, or leave empty to publish without an FAQ section.
+          </div>
+
+          <div id="post-faqs-list" class="hidden space-y-3"></div>
+          <p id="post-faqs-error" class="hidden text-xs text-red-600 font-medium mt-1" role="alert"></p>
+        </fieldset>
+
+        <!-- Form Actions: Preview, Save Draft, and Publish -->
+        <div class="pt-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <p id="editor-action-hint" class="text-xs text-slate-500">
+            All required fields are validated before saving to <code class="text-[11px] font-mono">public.blog_posts</code>.
+          </p>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- Preview Button -->
+            <button
+              type="button"
+              id="btn-preview-post"
+              class="inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 font-semibold text-sm px-4 py-2.5 rounded-xl shadow-2xs transition-colors cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg class="w-4 h-4 text-emerald-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+              </svg>
+              Preview
+            </button>
+
+            <!-- Save Draft Button -->
+            <button
+              type="button"
+              id="btn-save-draft"
+              class="inline-flex items-center justify-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-semibold text-sm px-4 py-2.5 rounded-xl shadow-2xs transition-colors cursor-pointer whitespace-nowrap shrink-0 disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200 disabled:cursor-not-allowed"
+            >
+              <span id="btn-save-draft-label">Save as Draft</span>
+            </button>
+
+            <!-- Publish Post Button -->
+            <button
+              type="button"
+              id="btn-publish-post"
+              class="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-xs transition-colors cursor-pointer whitespace-nowrap shrink-0 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed"
+            >
+              <span id="btn-publish-post-label">Publish Post</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SECTION 4: LIVE ARTICLE & SEO PREVIEW      -->
+    <!-- ========================================== -->
+    <section
+      id="section-post-preview"
+      aria-labelledby="preview-heading"
+      class="hidden bg-white border-2 border-emerald-600 rounded-xl shadow-sm overflow-hidden"
+    >
+      <div class="bg-emerald-50/70 px-5 sm:px-6 py-4 border-b border-emerald-200 flex items-center justify-between">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-emerald-800">Local UI Preview (Unsaved)</span>
+          <h2 id="preview-heading" class="text-lg font-bold text-slate-900">
+            Post &amp; Search Snippet Preview
+          </h2>
+        </div>
+        <button
+          type="button"
+          id="btn-close-preview"
+          class="text-xs font-semibold text-slate-700 hover:text-slate-900 bg-white border border-slate-300 px-3 py-1.5 rounded-lg cursor-pointer whitespace-nowrap shrink-0"
+        >
+          Close Preview
+        </button>
+      </div>
+
+      <div class="p-5 sm:p-6 space-y-6">
+        <!-- Search Engine Results Snippet Preview -->
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+          <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+            Search Result Snippet Preview
+          </p>
+          <p id="preview-serp-url" class="text-xs text-emerald-800 font-mono truncate">
+            https://suweldotools.com/blog/
+          </p>
+          <p id="preview-serp-title" class="text-lg font-semibold text-blue-800 mt-0.5 leading-snug">
+            SEO Title Preview | SuweldoTools
+          </p>
+          <p id="preview-serp-description" class="text-sm text-slate-600 mt-1 leading-relaxed">
+            Meta description preview.
+          </p>
+        </div>
+
+        <!-- Article Header & Body Preview -->
+        <article class="border-t border-slate-200 pt-6 max-w-3xl">
+          <div class="flex flex-wrap items-center gap-3 text-xs font-semibold text-emerald-700 uppercase tracking-wider">
+            <span id="preview-article-lang">English (en-PH)</span>
+            <span aria-hidden="true">&bull;</span>
+            <span id="preview-article-author" class="normal-case text-slate-600 font-medium">By SuweldoTools</span>
+            <span aria-hidden="true">&bull;</span>
+            <span>Draft Preview</span>
+          </div>
+          <h3 id="preview-article-title" class="text-2xl sm:text-3xl font-bold text-slate-900 mt-2 leading-tight">
+            Article Title Preview
+          </h3>
+          <p id="preview-article-excerpt" class="text-base text-slate-600 mt-3 leading-relaxed bg-slate-50 border border-slate-200 rounded-lg p-3.5 italic">
+            Excerpt preview...
+          </p>
+
+          <figure id="preview-image-container" class="hidden mt-5 bg-slate-100 border border-slate-200 rounded-xl p-3 space-y-2.5">
+            <img
+              id="preview-image-element"
+              src=""
+              alt=""
+              class="w-full max-h-72 object-cover rounded-lg border border-slate-200 hidden"
+            />
+            <div>
+              <p class="text-xs font-mono text-slate-600 break-all">
+                <strong>Image URL:</strong> <span id="preview-image-url-text"></span>
+              </p>
+              <p class="text-xs text-slate-600 mt-1">
+                <strong>Alt Text:</strong> <span id="preview-image-alt-text"></span>
+              </p>
+            </div>
+          </figure>
+
+          <div id="preview-article-content" class="mt-6 space-y-4 text-slate-800 text-base leading-relaxed"></div>
+
+          <div id="preview-article-faqs" class="hidden mt-8 pt-6 border-t border-slate-200 space-y-3"></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SECTION 4: ANNOUNCEMENT POPUP MANAGEMENT   -->
+    <!-- ========================================== -->
+    <section id="section-announcement-admin" aria-labelledby="announcement-admin-heading" class="hidden space-y-6">
+      <!-- Section Header -->
+      <div class="bg-white border border-slate-200 rounded-xl p-5 sm:p-6 shadow-2xs space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold uppercase tracking-wider text-emerald-700">Sitewide Banner &amp; Modal</span>
+              <span id="announcement-active-badge" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold border bg-slate-100 text-slate-600 border-slate-200">
+                Checking Status…
+              </span>
+            </div>
+            <h2 id="announcement-admin-heading" class="text-2xl font-bold text-slate-900 tracking-tight mt-1">
+              Announcement Popup Management
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl">
+              Configure the sitewide announcement for English (<code class="font-mono text-xs bg-slate-100 px-1 py-0.5 rounded">/</code>) and Filipino (<code class="font-mono text-xs bg-slate-100 px-1 py-0.5 rounded">/tl/</code>) visitors. Saves are optimistic-lock protected and require admin authorization.
+            </p>
+          </div>
+
+          <!-- Controls: Enable / Disable Toggle -->
+          <div class="flex flex-wrap items-center gap-3 self-start sm:self-center">
+            <button
+              type="button"
+              id="btn-toggle-announcement-active"
+              class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-colors cursor-pointer border shadow-2xs bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-300"
+            >
+              <span id="btn-toggle-announcement-label">Enable Sitewide Announcement</span>
+            </button>
+            <button
+              type="button"
+              id="btn-refresh-announcement"
+              class="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-300 transition-colors cursor-pointer"
+            >
+              Reload State
+            </button>
+          </div>
+        </div>
+
+        <!-- Token & Database Sync Info -->
+        <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between text-xs text-slate-500 gap-2">
+          <div class="flex flex-wrap items-center gap-2 font-mono text-[11px]">
+            <span>Draft Lock Token:</span>
+            <code id="announcement-token-display" class="bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 font-bold">Unsynchronized</code>
+          </div>
+          <div id="announcement-last-updated-text" class="text-slate-500">
+            Awaiting database connection…
+          </div>
+        </div>
+      </div>
+
+      <!-- Concurrency Conflict Alert Banner (Shown if token mismatch occurs) -->
+      <div
+        id="announcement-conflict-banner"
+        role="alert"
+        aria-live="assertive"
+        class="hidden rounded-xl border border-red-300 bg-red-50 text-red-900 p-4 space-y-3"
+      >
+        <div class="flex items-start gap-3">
+          <span class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-red-100 text-red-700 border border-red-200 shrink-0 mt-0.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+            </svg>
+          </span>
+          <div class="space-y-1">
+            <h3 class="font-bold text-sm text-red-900">Optimistic Lock Conflict Detected</h3>
+            <p id="announcement-conflict-message" class="text-xs text-red-800 leading-relaxed">
+              Another administrator saved or published a new version of the announcement while you were editing. Your changes cannot overwrite their updates until you reload the latest draft.
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2.5 pt-1 pl-11">
+          <button
+            type="button"
+            id="btn-reload-announcement-draft"
+            class="inline-flex items-center justify-center bg-red-700 hover:bg-red-800 text-white font-semibold text-xs px-3.5 py-2 rounded-lg shadow-xs transition-colors cursor-pointer"
+          >
+            Reload Latest Draft From Database
+          </button>
+        </div>
+      </div>
+
+      <!-- General Operation Feedback Banner -->
+      <div
+        id="announcement-feedback-banner"
+        role="status"
+        aria-live="polite"
+        class="hidden rounded-xl border p-4 text-xs sm:text-sm leading-relaxed"
+      >
+        <p id="announcement-feedback-title" class="font-bold"></p>
+        <p id="announcement-feedback-body" class="mt-0.5"></p>
+      </div>
+
+      <!-- Main Announcement Form & Preview Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Left: Form Controls (7 cols) -->
+        <div class="lg:col-span-7 bg-white border border-slate-200 rounded-xl p-5 sm:p-6 shadow-2xs space-y-6">
+          <form id="announcement-form" class="space-y-6" novalidate autocomplete="off">
+            <!-- Display Style Picker -->
+            <div>
+              <label class="block text-sm font-semibold text-slate-800 mb-2">
+                Display Style <span class="text-red-600 font-bold" aria-hidden="true">*</span>
+              </label>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label class="flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/20 cursor-pointer transition">
+                  <input
+                    type="radio"
+                    name="announcement-display-style"
+                    value="modal"
+                    checked
+                    class="mt-1 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <div>
+                    <span class="text-sm font-bold text-slate-900 block">Center Modal</span>
+                    <span class="text-xs text-slate-500 mt-0.5 block">Modal dialog with dark backdrop, best for urgent or critical notices.</span>
+                  </div>
+                </label>
+                <label class="flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/20 cursor-pointer transition">
+                  <input
+                    type="radio"
+                    name="announcement-display-style"
+                    value="banner"
+                    class="mt-1 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <div>
+                    <span class="text-sm font-bold text-slate-900 block">Floating Banner</span>
+                    <span class="text-xs text-slate-500 mt-0.5 block">Unobtrusive bottom-right toast, best for feature announcements or updates.</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- English Fields Fieldset -->
+            <fieldset class="border border-slate-200 rounded-xl p-4 sm:p-5 bg-slate-50/60 space-y-4">
+              <legend class="text-sm font-bold text-slate-900 px-2 flex items-center gap-1.5">
+                <span class="inline-block w-2 h-2 rounded-full bg-blue-600"></span>
+                English Announcement (en-PH)
+              </legend>
+
+              <div>
+                <label for="announcement-title-en" class="block text-xs font-semibold text-slate-800 mb-1">
+                  English Title <span class="text-red-600" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="announcement-title-en"
+                  required
+                  placeholder="e.g., Important 2026 Statutory Rate Updates"
+                  class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-lg px-3.5 py-2.5 focus:border-emerald-600"
+                />
+              </div>
+
+              <div>
+                <label for="announcement-body-en" class="block text-xs font-semibold text-slate-800 mb-1">
+                  English Message Body <span class="text-red-600" aria-hidden="true">*</span>
+                </label>
+                <textarea
+                  id="announcement-body-en"
+                  rows="3"
+                  required
+                  placeholder="e.g., We have updated our SSS, PhilHealth, and Pag-IBIG calculators with the latest 2026 contribution schedules."
+                  class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-lg px-3.5 py-2.5 focus:border-emerald-600"
+                ></textarea>
+              </div>
+            </fieldset>
+
+            <!-- Filipino Fields Fieldset -->
+            <fieldset class="border border-slate-200 rounded-xl p-4 sm:p-5 bg-slate-50/60 space-y-4">
+              <legend class="text-sm font-bold text-slate-900 px-2 flex items-center gap-1.5">
+                <span class="inline-block w-2 h-2 rounded-full bg-emerald-600"></span>
+                Filipino Announcement (tl-PH)
+              </legend>
+
+              <div>
+                <label for="announcement-title-tl" class="block text-xs font-semibold text-slate-800 mb-1">
+                  Filipino Title <span class="text-red-600" aria-hidden="true">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="announcement-title-tl"
+                  required
+                  placeholder="e.g., Mahalagang Update sa mga Kaltas para sa 2026"
+                  class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-lg px-3.5 py-2.5 focus:border-emerald-600"
+                />
+              </div>
+
+              <div>
+                <label for="announcement-body-tl" class="block text-xs font-semibold text-slate-800 mb-1">
+                  Filipino Message Body <span class="text-red-600" aria-hidden="true">*</span>
+                </label>
+                <textarea
+                  id="announcement-body-tl"
+                  rows="3"
+                  required
+                  placeholder="e.g., Na-update na ang aming mga calculator para sa bagong kaltas sa SSS, PhilHealth, at Pag-IBIG para sa taong 2026."
+                  class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-lg px-3.5 py-2.5 focus:border-emerald-600"
+                ></textarea>
+              </div>
+            </fieldset>
+
+            <!-- Optional Image Fieldset -->
+            <fieldset class="border border-slate-200 rounded-xl p-4 sm:p-5 bg-slate-50/60 space-y-4">
+              <legend class="text-sm font-bold text-slate-900 px-2">
+                Featured Image (Optional)
+              </legend>
+
+              <div>
+                <label for="announcement-image-url" class="block text-xs font-semibold text-slate-800 mb-1">
+                  Image URL
+                </label>
+                <input
+                  type="url"
+                  id="announcement-image-url"
+                  placeholder="https://suweldotools.com/images/announcement.jpg or /images/..."
+                  class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-lg px-3.5 py-2.5 focus:border-emerald-600"
+                />
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label for="announcement-image-alt-en" class="block text-xs font-semibold text-slate-800 mb-1">
+                    Image Alt Text (English)
+                  </label>
+                  <input
+                    type="text"
+                    id="announcement-image-alt-en"
+                    placeholder="Brief description of the image"
+                    class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-lg px-3.5 py-2.5 focus:border-emerald-600"
+                  />
+                </div>
+                <div>
+                  <label for="announcement-image-alt-tl" class="block text-xs font-semibold text-slate-800 mb-1">
+                    Image Alt Text (Filipino)
+                  </label>
+                  <input
+                    type="text"
+                    id="announcement-image-alt-tl"
+                    placeholder="Maikling paglalarawan sa larawan"
+                    class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-lg px-3.5 py-2.5 focus:border-emerald-600"
+                  />
+                </div>
+              </div>
+            </fieldset>
+
+            <!-- Optional CTA Link Fieldset -->
+            <fieldset class="border border-slate-200 rounded-xl p-4 sm:p-5 bg-slate-50/60 space-y-4">
+              <legend class="text-sm font-bold text-slate-900 px-2">
+                Call-to-Action Link (Optional)
+              </legend>
+
+              <div>
+                <label for="announcement-link-url" class="block text-xs font-semibold text-slate-800 mb-1">
+                  Button Link URL
+                </label>
+                <input
+                  type="url"
+                  id="announcement-link-url"
+                  placeholder="e.g., /sss-contribution-table-2026/ or https://..."
+                  class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-lg px-3.5 py-2.5 focus:border-emerald-600"
+                />
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label for="announcement-link-label-en" class="block text-xs font-semibold text-slate-800 mb-1">
+                    Button Label (English)
+                  </label>
+                  <input
+                    type="text"
+                    id="announcement-link-label-en"
+                    placeholder="e.g., View SSS Table 2026"
+                    class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-lg px-3.5 py-2.5 focus:border-emerald-600"
+                  />
+                </div>
+                <div>
+                  <label for="announcement-link-label-tl" class="block text-xs font-semibold text-slate-800 mb-1">
+                    Button Label (Filipino)
+                  </label>
+                  <input
+                    type="text"
+                    id="announcement-link-label-tl"
+                    placeholder="e.g., Tingnan ang SSS Table 2026"
+                    class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-lg px-3.5 py-2.5 focus:border-emerald-600"
+                  />
+                </div>
+              </div>
+            </fieldset>
+
+            <!-- Action Buttons -->
+            <div class="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200">
+              <div class="text-xs text-slate-500">
+                Draft edits remain private until you click <strong>Publish Announcement</strong>.
+              </div>
+              <div class="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  id="btn-save-announcement-draft"
+                  class="inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-300 font-semibold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-2xs transition-colors cursor-pointer"
+                >
+                  <span id="btn-save-announcement-draft-label">Save Draft</span>
+                </button>
+                <button
+                  type="button"
+                  id="btn-publish-announcement"
+                  class="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-semibold text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-xs transition-colors cursor-pointer"
+                >
+                  <span id="btn-publish-announcement-label">Publish Announcement</span>
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- Right: Live Interactive Preview (5 cols) -->
+        <div class="lg:col-span-5 space-y-4">
+          <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-2xs space-y-4 sticky top-20">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 class="text-sm font-bold text-slate-900">Live Preview</h3>
+              <div role="group" aria-label="Preview language" class="inline-flex items-center rounded-lg bg-slate-100 p-0.5 text-xs font-semibold">
+                <button
+                  type="button"
+                  id="btn-preview-lang-en"
+                  class="px-2.5 py-1 rounded-md bg-white text-emerald-700 shadow-2xs transition"
+                >
+                  English
+                </button>
+                <button
+                  type="button"
+                  id="btn-preview-lang-tl"
+                  class="px-2.5 py-1 rounded-md text-slate-600 hover:text-slate-900 transition"
+                >
+                  Filipino
+                </button>
+              </div>
+            </div>
+
+            <!-- Preview Card Container -->
+            <div id="announcement-live-preview-box" class="min-h-[220px] rounded-xl border border-dashed border-slate-300 p-4 bg-slate-50 flex flex-col justify-center">
+              <div id="announcement-preview-card" class="bg-white border border-slate-200 rounded-2xl shadow-md p-4 space-y-3">
+                <div class="flex items-start justify-between gap-2">
+                  <h4 id="announcement-preview-title" class="font-bold text-sm text-slate-900 leading-snug">
+                    (Announcement Title Preview)
+                  </h4>
+                  <span class="text-slate-400 text-xs shrink-0 cursor-default" title="Sample close button">&times;</span>
+                </div>
+                <div id="announcement-preview-image-box" class="hidden overflow-hidden rounded-xl border border-slate-100 max-h-36 bg-slate-50">
+                  <img id="announcement-preview-image-img" src="" alt="" class="w-full h-auto object-cover max-h-36" />
+                </div>
+                <p id="announcement-preview-body" class="text-xs text-slate-600 leading-relaxed whitespace-pre-line">
+                  (Announcement body preview will update live as you type...)
+                </p>
+                <div id="announcement-preview-cta-box" class="hidden pt-1 flex items-center justify-end gap-2">
+                  <span class="text-xs font-semibold text-slate-400">Dismiss</span>
+                  <span id="announcement-preview-cta-label" class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-600 shadow-2xs">
+                    Learn More
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <p class="text-[11px] text-slate-400 text-center">
+              Renders using the same typography and components as the public site popup.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- SECTION 5: DELETE POST CONFIRMATION MODAL  -->
+    <!-- ========================================== -->
+    <div
+      id="delete-post-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="delete-post-modal-title"
+      aria-describedby="delete-post-modal-description"
+      aria-hidden="true"
+      class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-[1px]"
+    >
+      <div class="w-full max-w-lg bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden">
+        <div class="px-6 py-5 border-b border-slate-200 bg-red-50/60 flex items-start gap-3.5">
+          <span
+            class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-red-100 text-red-700 border border-red-200 shrink-0 mt-0.5"
+            aria-hidden="true"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+          </span>
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-wider text-red-700">
+              Permanent Database Action
+            </p>
+            <h2 id="delete-post-modal-title" class="text-lg font-bold text-slate-900 mt-0.5">
+              Delete Blog Post?
+            </h2>
+          </div>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Target Record</span>
+              <span
+                id="delete-modal-post-status"
+                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border"
+              ></span>
+            </div>
+            <p id="delete-modal-post-title" class="text-sm font-bold text-slate-900 break-words"></p>
+            <p id="delete-modal-post-slug" class="text-xs font-mono text-slate-600 break-all"></p>
+            <p class="text-[11px] font-mono text-slate-500">
+              UUID: <span id="delete-modal-post-id"></span>
+            </p>
+          </div>
+
+          <p id="delete-post-modal-description" class="text-xs text-slate-700 leading-relaxed">
+            This action is <strong>permanent</strong> and cannot be undone. Deleting this record removes it from <code class="font-mono text-[11px] bg-slate-100 px-1 py-0.5 rounded">public.blog_posts</code>, and the post may no longer appear on public pages after the next site update. Any sibling translation in the same post group will remain untouched.
+          </p>
+        </div>
+
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-end gap-3">
+          <button
+            type="button"
+            id="btn-cancel-delete-post"
+            class="inline-flex items-center justify-center bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-300 font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            id="btn-confirm-delete-post"
+            class="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 active:bg-red-800 disabled:bg-red-300 text-white font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl shadow-xs transition-colors cursor-pointer disabled:cursor-not-allowed"
+          >
+            <span id="btn-confirm-delete-label">Delete Post Permanently</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SECTION 6: UNSAVED CHANGES CONFIRM MODAL   -->
+    <!-- ========================================== -->
+    <div
+      id="unsaved-changes-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="unsaved-changes-modal-title"
+      aria-describedby="unsaved-changes-modal-description"
+      aria-hidden="true"
+      class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-[1px]"
+    >
+      <div class="w-full max-w-lg bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden">
+        <div class="px-6 py-5 border-b border-slate-200 bg-amber-50/70 flex items-start gap-3.5">
+          <span
+            class="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-amber-100 text-amber-800 border border-amber-200 shrink-0 mt-0.5"
+            aria-hidden="true"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+            </svg>
+          </span>
+          <div>
+            <p class="text-[11px] font-bold uppercase tracking-wider text-amber-800">
+              Unsaved Editor Changes
+            </p>
+            <h2 id="unsaved-changes-modal-title" class="text-lg font-bold text-slate-900 mt-0.5">
+              Replace Unsaved Blog Post Data?
+            </h2>
+          </div>
+        </div>
+
+        <div class="p-6 space-y-4">
+          <p id="unsaved-changes-modal-description" class="text-xs text-slate-700 leading-relaxed">
+            You have unsaved changes in the Blog Post Editor. Loading another post will discard your current unsaved edits unless you save them first.
+          </p>
+
+          <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2 text-xs">
+            <div>
+              <span class="font-semibold uppercase tracking-wider text-slate-500 text-[11px]">Current Unsaved Editor State</span>
+              <p id="unsaved-modal-current-summary" class="font-semibold text-slate-900 mt-0.5 break-words"></p>
+            </div>
+            <div class="pt-2 border-t border-slate-200">
+              <span class="font-semibold uppercase tracking-wider text-slate-500 text-[11px]">Selected Action</span>
+              <p id="unsaved-modal-target-summary" class="font-medium text-emerald-800 mt-0.5 break-words"></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-end gap-3">
+          <button
+            type="button"
+            id="btn-cancel-discard-changes"
+            class="inline-flex items-center justify-center bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-900 border border-slate-300 font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl transition-colors cursor-pointer"
+          >
+            Keep Unsaved Changes
+          </button>
+          <button
+            type="button"
+            id="btn-confirm-discard-changes"
+            class="inline-flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-semibold text-xs sm:text-sm px-4 py-2 rounded-xl shadow-xs transition-colors cursor-pointer"
+          >
+            Discard &amp; Continue
+          </button>
+        </div>
+      </div>
+    </div>
+    </div>
+  </main>
+
+  <!-- Simple Admin Footer -->
+  <footer class="bg-white border-t border-slate-200 mt-auto py-5">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+      <p>SuweldoTools Blog Admin &mdash; Supabase Auth &amp; RLS Content Management</p>
+      <div class="flex items-center gap-4">
+        <a href="/" class="hover:text-emerald-700 underline">Public English Home (/)</a>
+        <a href="/tl/" class="hover:text-emerald-700 underline">Public Filipino Home (/tl/)</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
