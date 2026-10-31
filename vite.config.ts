@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import path from 'path';
 import {defineConfig} from 'vite';
-import {generatePublicBlog} from './scripts/generate-blog';
+import {generatePublicBlog} from './scripts/generate-blog.ts';
 
 export default defineConfig(() => {
   const rootDir = typeof import.meta.dirname !== 'undefined' ? import.meta.dirname : process.cwd();
