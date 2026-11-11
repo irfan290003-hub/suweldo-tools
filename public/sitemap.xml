@@ -43,6 +43,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://suweldotools.com/blog/how-to-compute-take-home-pay-philippines/</loc>
+    <lastmod>2026-11-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://suweldotools.com/about/</loc>
     <lastmod>2026-10-19</lastmod>
     <changefreq>monthly</changefreq>
@@ -131,5 +137,75 @@
     <lastmod>2026-10-20</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://suweldotools.com/sources/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://suweldotools.com/tl/sources/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://suweldotools.com/editorial-policy/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://suweldotools.com/tl/editorial-policy/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://suweldotools.com/corrections-policy/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://suweldotools.com/tl/corrections-policy/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://suweldotools.com/authors/mohammad-irfan/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://suweldotools.com/tl/authors/mohammad-irfan/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://suweldotools.com/calculators/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://suweldotools.com/tl/calculators/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://suweldotools.com/pagibig-mp2-savings-estimator/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://suweldotools.com/tl/pagibig-mp2-savings-estimator/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://suweldotools.com/final-pay-calculator-philippines/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://suweldotools.com/tl/final-pay-calculator-philippines/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
 </urlset>

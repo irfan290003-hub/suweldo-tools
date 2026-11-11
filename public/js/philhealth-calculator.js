@@ -1,18 +1,28 @@
 /**
- * SuweldoTools — Verified PhilHealth Calculator Engine (2026)
+ * SuweldoTools — PhilHealth Calculator Engine (2026)
  * Vanilla JavaScript implementation. Zero external dependencies.
  * Supports English (en-PH) and Filipino (tl-PH).
  *
- * Official Grounding & Verified Sources:
- * 1. Republic Act No. 11223 (Universal Health Care Act) § 10
- * 2. PhilHealth Advisory No. 2025-0002
- * 3. PhilHealth Employer Payment Procedures & Contribution Table
+ * Official Grounding & Primary Regulatory Sources:
+ * 1. Statutory Basis: Republic Act No. 11223 (Universal Health Care Act), Section 10
+ *    (Establishes the statutory contribution schedule; final scheduled tier is 5.0% rate,
+ *    ₱10,000.00 monthly income floor, and ₱100,000.00 monthly income ceiling)
+ * 2. Implementing Circulars: PhilHealth Circular No. 2019-0009 & PhilHealth Circular No. 2020-0005 (Revision 1)
+ *    (Implement the statutory schedule; the 2024–2025 final scheduled tier remains the latest published schedule in force)
+ *    https://www.philhealth.gov.ph/circulars/2020/circ2020-0005.pdf
+ *    https://www.philhealth.gov.ph/circulars/2019/circ2019-0009.pdf
+ *    https://www.philhealth.gov.ph/news/2019/new_contri.php
+ * 3. CY 2025 Confirmation: PhilHealth Advisory No. 2025-0002
+ *    (Specifically confirms the 5.0% rate, ₱10,000 floor, and ₱100,000 ceiling for CY 2025)
+ *    https://www.philhealth.gov.ph/advisories/2025/PA2025-0002.pdf
+ * 4. PhilHealth Employer Payment and Reporting Procedures
  *    https://www.philhealth.gov.ph/partners/employers/pay_procedures.php
- * 4. Philippine Information Agency (PIA) 2026 Rate Schedule Notice
+ * 5. Supplementary News Context (Not Primary Legal Authority):
+ *    Philippine Information Agency (PIA) 2026 Rate Report
  *    https://pia.gov.ph/news/philhealth-sets-5-premium-contribution-rate-for-2026/
  *
  * Parameters for Employed Members (Direct Contributors in the Formal Economy):
- * - Premium rate: 5.0% of applicable Monthly Basic Salary (MBS).
+ * - Premium rate: 5.0% of applicable Monthly Basic Salary (MBS) (latest published schedule).
  * - Statutory floor: ₱10,000.00 (Minimum total monthly premium = ₱500.00).
  * - Statutory ceiling: ₱100,000.00 (Maximum total monthly premium = ₱5,000.00).
  * - Sharing: 50% Employee Share (2.5%) and 50% Employer Share (2.5%).
@@ -32,7 +42,7 @@
 
   var isTl = isFilipinoLocale();
 
-  // Statutory parameters (Verified for 2026)
+  // Statutory parameters (Latest published schedule under RA 11223 § 10 and Circular Nos. 2019-0009 & 2020-0005 (Rev. 1); confirmed for CY 2025 by Advisory No. 2025-0002)
   var CONFIG = {
     premiumRate: 0.05,
     employeeShareRatio: 0.5,
@@ -45,7 +55,7 @@
   // Currency formatter
   function formatPHP(amount) {
     var num = Number(amount);
-    if (isNaN(num)) num = 0;
+    if (isNaN(num) || num < 0) num = 0;
     return '₱' + num.toLocaleString('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
@@ -127,17 +137,23 @@
     var rawSalary = getCleanSalary();
     validateInput(rawSalary);
 
-    // Apply statutory floor and ceiling
-    var applicableSalary = rawSalary;
+    var displaySalary = rawSalary > 0 ? rawSalary : 0;
+
+    // Apply statutory floor and ceiling only for valid positive salary inputs
+    var applicableSalary = 0;
     var floorApplied = false;
     var ceilingApplied = false;
 
-    if (rawSalary <= CONFIG.floor) {
-      applicableSalary = CONFIG.floor;
-      floorApplied = true;
-    } else if (rawSalary >= CONFIG.ceiling) {
-      applicableSalary = CONFIG.ceiling;
-      ceilingApplied = true;
+    if (rawSalary > 0) {
+      if (rawSalary <= CONFIG.floor) {
+        applicableSalary = CONFIG.floor;
+        floorApplied = true;
+      } else if (rawSalary >= CONFIG.ceiling) {
+        applicableSalary = CONFIG.ceiling;
+        ceilingApplied = true;
+      } else {
+        applicableSalary = rawSalary;
+      }
     }
 
     // Centavo rounding rule
@@ -179,13 +195,17 @@
 
     // Update Breakdown Table
     if (tblBasicSalary) {
-      tblBasicSalary.textContent = formatPHP(rawSalary);
+      tblBasicSalary.textContent = formatPHP(displaySalary);
     }
     if (tblApplicableMBS) {
       tblApplicableMBS.textContent = formatPHP(applicableSalary);
     }
     if (tblSalaryBaseNote) {
-      if (floorApplied) {
+      if (rawSalary <= 0) {
+        tblSalaryBaseNote.textContent = isTl
+          ? 'Maglagay ng buwanang batayang sahod na higit sa ₱0.00 upang makalkula ang kontribusyon sa PhilHealth'
+          : 'Enter a monthly basic salary above ₱0.00 to compute PhilHealth contributions';
+      } else if (floorApplied) {
         tblSalaryBaseNote.textContent = isTl
           ? 'Inilapat ang Floor: Minimum na ₱10,000.00 batayang sahod (₱500 pinakamababang kontribusyon)'
           : 'Statutory Floor Applied: Minimum ₱10,000.00 salary base (₱500 min total premium)';
@@ -418,8 +438,15 @@
       var rawHandoff = window.sessionStorage ? window.sessionStorage.getItem(CALC_HANDOFF_KEY) : null;
       if (rawHandoff) {
         var handoff = JSON.parse(rawHandoff);
-        if (handoff && handoff.calculator === 'philhealth' && handoff.basicSalary) {
-          if (salaryInput) {
+        if (handoff && handoff.calculator === 'philhealth') {
+          try {
+            if (window.sessionStorage) {
+              window.sessionStorage.removeItem(CALC_HANDOFF_KEY);
+            }
+          } catch (removeErr) {
+            // Ignore storage removal errors in restricted environments
+          }
+          if (salaryInput && handoff.basicSalary) {
             salaryInput.value = handoff.basicSalary;
           }
           if (handoff.frequency) {

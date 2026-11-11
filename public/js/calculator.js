@@ -127,13 +127,25 @@
   const netPercentageText = document.getElementById('netPercentageText');
 
   /**
+   * Round currency value to 2 decimal places (centavos)
+   */
+  function roundCentavos(amount) {
+    const num = Number(amount);
+    if (!Number.isFinite(num) || amount === null || amount === undefined || num <= 0) {
+      return 0;
+    }
+    return Math.round(Number((num * 100).toPrecision(15))) / 100;
+  }
+
+  /**
    * Safe currency formatter (Philippine Peso)
    */
   function formatPHP(amount) {
-    if (isNaN(amount) || amount === null || amount === undefined || amount <= 0) {
+    const num = Number(amount);
+    if (!Number.isFinite(num) || amount === null || amount === undefined || num <= 0) {
       return '₱0.00';
     }
-    return '₱' + Number(amount).toLocaleString('en-PH', {
+    return '₱' + roundCentavos(num).toLocaleString('en-PH', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
@@ -177,7 +189,7 @@
    * MSC Range: ₱5,000 to ₱35,000 in ₱500 steps.
    */
   function computeSSS(basicSalary) {
-    if (basicSalary <= 0 || isNaN(basicSalary)) return 0;
+    if (!Number.isFinite(basicSalary) || basicSalary <= 0) return 0;
     let msc;
     if (basicSalary < rates.sss.salaryFloorThreshold) {
       msc = rates.sss.mscMin;
@@ -187,7 +199,7 @@
       msc = Math.round(basicSalary / rates.sss.mscStep) * rates.sss.mscStep;
       msc = Math.max(rates.sss.mscMin, Math.min(msc, rates.sss.mscMax));
     }
-    return msc * rates.sss.employeeRate;
+    return roundCentavos(msc * rates.sss.employeeRate);
   }
 
   /**
@@ -196,12 +208,12 @@
    * Floor ₱10,000, Ceiling ₱100,000.
    */
   function computePhilHealth(basicSalary) {
-    if (basicSalary <= 0 || isNaN(basicSalary)) return 0;
+    if (!Number.isFinite(basicSalary) || basicSalary <= 0) return 0;
     const clampedSalary = Math.max(
       rates.philhealth.salaryFloor,
       Math.min(basicSalary, rates.philhealth.salaryCeiling)
     );
-    return clampedSalary * rates.philhealth.employeeShareRate;
+    return roundCentavos(clampedSalary * rates.philhealth.employeeShareRate);
   }
 
   /**
@@ -210,12 +222,12 @@
    * Maximum monthly fund salary base ₱10,000 (cap = ₱200).
    */
   function computePagIBIG(basicSalary) {
-    if (basicSalary <= 0 || isNaN(basicSalary)) return 0;
+    if (!Number.isFinite(basicSalary) || basicSalary <= 0) return 0;
     const fundSalary = Math.min(basicSalary, rates.pagibig.maxFundSalary);
     const rate = basicSalary <= rates.pagibig.lowSalaryThreshold
       ? rates.pagibig.employeeRateLow
       : rates.pagibig.employeeRate;
-    return Math.min(fundSalary * rate, rates.pagibig.maxEmployeeContribution);
+    return roundCentavos(Math.min(fundSalary * rate, rates.pagibig.maxEmployeeContribution));
   }
 
   /**
@@ -224,7 +236,7 @@
    * Minimum wage earners exempt from income tax (RA 9504).
    */
   function computeWithholdingTax(taxableMonthly, isMinimumWage) {
-    if (isMinimumWage || taxableMonthly <= 0 || isNaN(taxableMonthly)) return 0;
+    if (isMinimumWage || !Number.isFinite(taxableMonthly) || taxableMonthly <= 0) return 0;
     const annualTaxable = taxableMonthly * 12;
     let annualTax = 0;
 
@@ -238,7 +250,7 @@
       }
     }
 
-    return Math.max(0, annualTax / 12);
+    return roundCentavos(Math.max(0, annualTax / 12));
   }
 
   /**
@@ -253,7 +265,7 @@
     let hasWarning = false;
     let warningMessage = '';
 
-    if (isNaN(rawBasic) || basicSalaryInput.value.trim() === '') {
+    if (!Number.isFinite(rawBasic) || basicSalaryInput.value.trim() === '') {
       basicSalary = 0;
     } else if (rawBasic < 0) {
       basicSalary = 0;
@@ -273,7 +285,7 @@
 
     let rawAllowances = allowancesInput ? parseFloat(allowancesInput.value.replace(/,/g, '')) : 0;
     let allowances = 0;
-    if (isNaN(rawAllowances) || (allowancesInput && allowancesInput.value.trim() === '')) {
+    if (!Number.isFinite(rawAllowances) || (allowancesInput && allowancesInput.value.trim() === '')) {
       allowances = 0;
     } else if (rawAllowances < 0) {
       allowances = 0;
@@ -301,39 +313,45 @@
       }
     }
 
-    // Monthly core values
-    const grossMonthly = basicSalary + allowances;
-    const grossCutoff = grossMonthly / 2;
+    // Monthly core values (rounded to centavos at each line item so displayed items sum to totals)
+    const grossMonthly = roundCentavos(basicSalary + allowances);
+    const grossCutoff = roundCentavos(grossMonthly / 2);
     const sssMonthly = computeSSS(basicSalary);
     const philHealthMonthly = computePhilHealth(basicSalary);
     const pagIBIGMonthly = computePagIBIG(basicSalary);
 
-    const mandatoryContributionsMonthly = sssMonthly + philHealthMonthly + pagIBIGMonthly;
-    const taxableIncomeMonthly = Math.max(0, grossMonthly - mandatoryContributionsMonthly);
+    const mandatoryContributionsMonthly = roundCentavos(sssMonthly + philHealthMonthly + pagIBIGMonthly);
+    const taxableIncomeMonthly = roundCentavos(Math.max(0, grossMonthly - mandatoryContributionsMonthly));
     const withholdingTaxMonthly = computeWithholdingTax(taxableIncomeMonthly, isMinimumWage);
-    const totalDeductionsMonthly = mandatoryContributionsMonthly + withholdingTaxMonthly;
-    const netPayMonthly = Math.max(0, grossMonthly - totalDeductionsMonthly);
+    const totalDeductionsMonthly = roundCentavos(mandatoryContributionsMonthly + withholdingTaxMonthly);
+    const netPayMonthly = roundCentavos(Math.max(0, grossMonthly - totalDeductionsMonthly));
 
-    const netPayCutoff = netPayMonthly / 2;
-    const annualNetPay = netPayMonthly * 12;
+    const annualNetPay = roundCentavos(netPayMonthly * 12);
 
-    // Frequency multiplier for breakdown table display (50% equal split per cutoff)
+    // Per-cutoff breakdown values (50% split rounded per line item, net equals cutoff gross minus cutoff deductions)
+    const sssCutoff = roundCentavos(sssMonthly / 2);
+    const philHealthCutoff = roundCentavos(philHealthMonthly / 2);
+    const pagIBIGCutoff = roundCentavos(pagIBIGMonthly / 2);
+    const withholdingTaxCutoff = roundCentavos(withholdingTaxMonthly / 2);
+    const totalDeductionsCutoff = roundCentavos(sssCutoff + philHealthCutoff + pagIBIGCutoff + withholdingTaxCutoff);
+    const netPayCutoff = roundCentavos(Math.max(0, grossCutoff - totalDeductionsCutoff));
+
+    // Frequency selection for breakdown table display (50% equal split per cutoff)
     const isCutoff = (displayFrequency === 'cutoff');
-    const mult = isCutoff ? 0.5 : 1.0;
 
-    if (resGross) resGross.textContent = formatPHP(grossMonthly * mult);
+    if (resGross) resGross.textContent = formatPHP(isCutoff ? grossCutoff : grossMonthly);
     if (resMonthlyGross) resMonthlyGross.textContent = formatPHP(grossMonthly);
     if (resCutoffGross) resCutoffGross.textContent = formatPHP(grossCutoff);
-    if (resSSS) resSSS.textContent = formatPHP(sssMonthly * mult);
-    if (resPhilHealth) resPhilHealth.textContent = formatPHP(philHealthMonthly * mult);
-    if (resPagIBIG) resPagIBIG.textContent = formatPHP(pagIBIGMonthly * mult);
-    if (resTax) resTax.textContent = formatPHP(withholdingTaxMonthly * mult);
-    if (resTotalDeductions) resTotalDeductions.textContent = formatPHP(totalDeductionsMonthly * mult);
+    if (resSSS) resSSS.textContent = formatPHP(isCutoff ? sssCutoff : sssMonthly);
+    if (resPhilHealth) resPhilHealth.textContent = formatPHP(isCutoff ? philHealthCutoff : philHealthMonthly);
+    if (resPagIBIG) resPagIBIG.textContent = formatPHP(isCutoff ? pagIBIGCutoff : pagIBIGMonthly);
+    if (resTax) resTax.textContent = formatPHP(isCutoff ? withholdingTaxCutoff : withholdingTaxMonthly);
+    if (resTotalDeductions) resTotalDeductions.textContent = formatPHP(isCutoff ? totalDeductionsCutoff : totalDeductionsMonthly);
 
     // Hero summary values always display monthly & cutoff distinctly
     if (resNetPay) resNetPay.textContent = formatPHP(netPayMonthly);
     if (resCutoffPay) resCutoffPay.textContent = formatPHP(netPayCutoff);
-    if (resNetPayTable) resNetPayTable.textContent = formatPHP(netPayMonthly * mult);
+    if (resNetPayTable) resNetPayTable.textContent = formatPHP(isCutoff ? netPayCutoff : netPayMonthly);
 
     if (resTaxableIncome) resTaxableIncome.textContent = formatPHP(taxableIncomeMonthly);
     if (resAnnualNet) resAnnualNet.textContent = formatPHP(annualNetPay);

@@ -9,11 +9,11 @@ This document establishes the authoritative reference data and official regulato
 ### Governing Authority & Legal Basis
 * **Agency:** Social Security System (SSS) — Republic of the Philippines
 * **Primary Law:** Republic Act No. 11199 (The Social Security Act of 2018)
-* **Implementing Circulars & Official Announcements:** 
-  * **SSS Circular No. 2024-006** (Issued December 19, 2024: *Schedule of SSS Contributions for All Business Employers and Employees Effective January 2025*, which superseded and repealed the historical 2023–2024 schedule under SSS Circular No. 2022-033)
+* **Implementing Schedules & Official Announcements:** 
+  * **Published SSS Contribution Schedules** (*Schedule of SSS Contributions for All Business Employers and Employees Effective January 2025*, which superseded the historical 2023–2024 schedule)
   * **Republic Act No. 11199 § 4(a)(1)** (Mandated statutory 15% rate schedule, ₱5,000 minimum MSC, and ₱35,000 maximum MSC effective January 2025)
   * **SSS Official Advisory:** "SSS Clarifies 1% Contribution Rate Hike; Bares Plans for 2025" (affirming 15% rate with ₱5,000 min MSC and ₱35,000 max MSC)
-  * *Applicability to 2026:* Under RA 11199 § 4(a)(1), the 15% rate is the final scheduled biennial increase; the schedule in SSS Circular No. 2024-006 continues in force for 2026 unless amended by subsequent legislation or SSS issuance.
+  * *Applicability to 2026:* Under RA 11199 § 4(a)(1) and the published SSS contribution schedules, the 15% rate is the final scheduled biennial increase and continues in force for 2026 unless amended by subsequent legislation or SSS issuance.
 * **Official Portals:**
   * SSS Pay Contribution: [sss.gov.ph/pay-contribution/](https://www.sss.gov.ph/pay-contribution/)
   * SSS Circulars Directory: [sss.gov.ph/sss-circulars/](https://www.sss.gov.ph/sss-circulars/)
@@ -45,7 +45,7 @@ This document establishes the authoritative reference data and official regulato
 * **Payslip Impact:** The employee's total deduction is always 5.0% of the aggregate MSC (up to ₱1,750.00).
 
 ### Employees' Compensation (EC) Program
-* **Legal Basis:** Presidential Decree No. 626 (Employees' Compensation and State Insurance Fund) as amended; ECC Executive Order No. 33.
+* **Legal Basis & Official Schedule:** Presidential Decree No. 626 (Employees' Compensation and State Insurance Fund), as amended (statutory authority); ECC Board Resolution No. 14-10-33 ([ecc.gov.ph/board-resolution-no-14-10-33/](https://ecc.gov.ph/board-resolution-no-14-10-33/), administrative resolution adjusting the private-sector EC contribution schedule); and the published SSS Employees' Compensation Program schedule ([sss.gov.ph/employees-compensation-program/](https://www.sss.gov.ph/employees-compensation-program/) and SSS Circular No. 2024-006).
 * **Liability:** The EC contribution is **100% employer-funded**. Employees are never deducted for EC.
 * **Rate Schedule:**
   * For MSC below ₱15,000.00 (MSC ₱5,000 to ₱14,500): **₱10.00 / month** per employee
@@ -57,7 +57,12 @@ This document establishes the authoritative reference data and official regulato
 
 ### Governing Authority & Legal Basis
 * **Agency:** Philippine Health Insurance Corporation (PhilHealth)
-* **Primary Law:** Republic Act No. 11223 (Universal Health Care Act) § 10
+* **Primary Law:** Republic Act No. 11223 (Universal Health Care Act), Section 10 (establishes the statutory contribution schedule; the final scheduled tier is a 5.0% premium rate with a ₱10,000.00 monthly income floor and ₱100,000.00 monthly income ceiling)
+* **Implementing Circulars:**
+  * **PhilHealth Circular No. 2019-0009** ([circ2019-0009.pdf](https://www.philhealth.gov.ph/circulars/2019/circ2019-0009.pdf)) — *Premium Contribution Schedule in the National Health Insurance Program (NHIP) Pursuant to R.A. No. 11223*
+  * **PhilHealth Circular No. 2020-0005 (Revision 1)** ([circ2020-0005.pdf](https://www.philhealth.gov.ph/circulars/2020/circ2020-0005.pdf)) — *Premium Contribution Schedule in the National Health Insurance Program (Revision 1)*
+* **CY 2025 Confirmation:** **PhilHealth Advisory No. 2025-0002** ([PA2025-0002.pdf](https://www.philhealth.gov.ph/advisories/2025/PA2025-0002.pdf)) specifically confirms the 5.0% premium rate, ₱10,000.00 monthly income floor, and ₱100,000.00 monthly income ceiling for Calendar Year (CY) 2025.
+* **Latest Published Schedule (2026 Status):** The 5.0% rate, ₱10,000.00 monthly income floor, and ₱100,000.00 monthly income ceiling represent the final scheduled tier under RA 11223 Section 10 and Circular Nos. 2019-0009 and 2020-0005 (Revision 1), and remain the latest published PhilHealth contribution schedule in force for 2026, with no subsequent legislation or PhilHealth issuance changing it.
 * **Official Portal:** [philhealth.gov.ph](https://www.philhealth.gov.ph)
 
 ### Statutory Rates & Parameters (2026)

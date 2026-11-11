@@ -75,16 +75,35 @@
   const resTaxExplanation = document.getElementById('tmResTaxExplanation');
 
   /**
+   * Clean and parse numeric input, stripping commas and rejecting non-finite values
+   */
+  function parseCleanNumber(val) {
+    if (val === null || val === undefined || typeof val === 'boolean') return NaN;
+    const cleaned = String(val).replace(/,/g, '').trim();
+    if (cleaned === '') return NaN;
+    const num = Number(cleaned);
+    return Number.isFinite(num) ? num : NaN;
+  }
+
+  /**
    * Currency formatter for Philippine Peso (PHP)
    */
   function formatPHP(amount) {
-    if (isNaN(amount) || amount === null || amount === undefined || amount < 0) {
+    const num = Number(amount);
+    if (!Number.isFinite(num) || amount === null || amount === undefined || num < 0) {
       return '₱0.00';
     }
-    return '₱' + Number(amount).toLocaleString('en-PH', {
+    return '₱' + num.toLocaleString('en-PH', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
+  }
+
+  /**
+   * Currency rounding helper (2 decimal places)
+   */
+  function roundCurrency(val) {
+    return Math.round((val + Number.EPSILON) * 100) / 100;
   }
 
   /**
@@ -97,25 +116,34 @@
    * @returns {Object} Calculated payroll breakdown
    */
   function calculate13thMonth(params) {
-    const monthlySalary = Math.max(0, Number(params.monthlySalary) || 0);
-    const monthsWorked = Math.min(12, Math.max(0, Number(params.monthsWorked) || 0));
-    const otherBenefits = Math.max(0, Number(params.otherBenefits) || 0);
+    const parsedSalary = parseCleanNumber(params.monthlySalary);
+    const parsedMonths = parseCleanNumber(params.monthsWorked);
+    const parsedOther = parseCleanNumber(params.otherBenefits);
+    const parsedExact = parseCleanNumber(params.exactTotalEarned);
+
+    const monthlySalary = (!isNaN(parsedSalary) && parsedSalary > 0) ? parsedSalary : 0;
+    const monthsWorked = !isNaN(parsedMonths) ? Math.min(12, Math.max(0, parsedMonths)) : 0;
+    const otherBenefits = (!isNaN(parsedOther) && parsedOther > 0) ? parsedOther : 0;
 
     let totalBasicEarned = 0;
-    const isCustomTotal = params.exactTotalEarned !== null && params.exactTotalEarned !== undefined && !isNaN(params.exactTotalEarned) && params.exactTotalEarned !== '';
+    const isCustomTotal = params.exactTotalEarned !== null && params.exactTotalEarned !== undefined && params.exactTotalEarned !== '' && !isNaN(parsedExact);
 
     if (isCustomTotal) {
-      totalBasicEarned = Math.max(0, Number(params.exactTotalEarned) || 0);
+      totalBasicEarned = Math.max(0, parsedExact);
     } else {
       totalBasicEarned = monthlySalary * monthsWorked;
     }
 
+    const effectiveMonthlySalary = isCustomTotal
+      ? roundCurrency(totalBasicEarned > 0 ? (monthsWorked > 0 ? totalBasicEarned / monthsWorked : totalBasicEarned / config.annualDivisor) : 0)
+      : monthlySalary;
+
     // DOLE statutory formula: Total basic salary earned during calendar year / 12
     const gross13thMonth = totalBasicEarned > 0 ? (totalBasicEarned / config.annualDivisor) : 0;
 
-    // Proration evaluation
+    // Proration & eligibility evaluation
     const isProrated = monthsWorked < 12 || (monthlySalary > 0 && Math.abs(totalBasicEarned - (monthlySalary * 12)) > 0.01);
-    const isEligible = monthsWorked >= 1 || (totalBasicEarned > 0 && monthlySalary > 0 && totalBasicEarned >= (monthlySalary * 1));
+    const isEligible = totalBasicEarned > 0 && (monthsWorked >= 1 || (monthlySalary > 0 && totalBasicEarned >= (monthlySalary * 1)));
 
     // Tax treatment under TRAIN Law Section 32(B)(7)(e) (₱90,000 aggregate cap)
     const totalAggregateBenefits = gross13thMonth + otherBenefits;
@@ -125,6 +153,7 @@
 
     return {
       monthlySalary,
+      effectiveMonthlySalary,
       monthsWorked,
       totalBasicEarned,
       isCustomTotal,
@@ -146,19 +175,24 @@
     if (!monthlySalaryInput) return;
 
     const isTl = isFilipinoLocale();
-    let monthlySalary = parseFloat(monthlySalaryInput.value);
-    let monthsWorked = parseFloat(monthsWorkedInput ? monthsWorkedInput.value : 12);
-    let otherBenefits = parseFloat(otherBenefitsInput && otherBenefitsInput.value ? otherBenefitsInput.value : 0);
+    const rawSalaryStr = monthlySalaryInput.value ? monthlySalaryInput.value.trim() : '';
+    const rawMonthsStr = (monthsWorkedInput && monthsWorkedInput.value !== undefined) ? monthsWorkedInput.value.trim() : '12';
+    const rawOtherStr = (otherBenefitsInput && otherBenefitsInput.value) ? otherBenefitsInput.value.trim() : '';
+    const rawExactStr = (exactTotalInput && exactTotalInput.value) ? exactTotalInput.value.trim() : '';
+
+    let monthlySalary = parseCleanNumber(rawSalaryStr);
+    let monthsWorked = parseCleanNumber(rawMonthsStr);
+    let otherBenefits = rawOtherStr === '' ? 0 : parseCleanNumber(rawOtherStr);
     const isCustomMode = customTotalToggle ? customTotalToggle.checked : false;
 
     let warnings = [];
 
     // Validation
     if (isNaN(monthlySalary) || monthlySalary < 0) {
-      monthlySalary = 0;
-      if (monthlySalaryInput.value !== '' && parseFloat(monthlySalaryInput.value) < 0) {
+      if (monthlySalary < 0) {
         warnings.push(isTl ? 'Hindi maaaring negatibo ang buwanang basic salary.' : 'Monthly basic salary cannot be negative.');
       }
+      monthlySalary = 0;
     }
 
     if (isNaN(monthsWorked) || monthsWorked < 0) {
@@ -171,20 +205,39 @@
     }
 
     if (isNaN(otherBenefits) || otherBenefits < 0) {
-      otherBenefits = 0;
-      if (otherBenefitsInput && otherBenefitsInput.value !== '' && parseFloat(otherBenefitsInput.value) < 0) {
+      if (otherBenefits < 0) {
         warnings.push(isTl ? 'Hindi maaaring negatibo ang ibang benepisyo.' : 'Other benefits cannot be negative.');
       }
+      otherBenefits = 0;
     }
 
     let exactTotal = null;
-    if (isCustomMode && exactTotalInput && exactTotalInput.value !== '') {
-      const parsedExact = parseFloat(exactTotalInput.value);
-      if (isNaN(parsedExact) || parsedExact < 0) {
+    if (isCustomMode) {
+      const hasBadInput = Boolean(exactTotalInput && exactTotalInput.validity && exactTotalInput.validity.badInput);
+      if (hasBadInput) {
         exactTotal = 0;
-        warnings.push(isTl ? 'Hindi maaaring negatibo ang aktwal na kabuuang basic salary na kinita.' : 'Actual total basic salary earned cannot be negative.');
+        warnings.push(
+          isTl
+            ? 'Maglagay ng wastong numero para sa aktwal na kabuuang basic salary na kinita.'
+            : 'Please enter a valid number for actual total basic salary earned.'
+        );
+      } else if (rawExactStr === '') {
+        exactTotal = 0;
       } else {
-        exactTotal = parsedExact;
+        const parsedExact = parseCleanNumber(rawExactStr);
+        if (isNaN(parsedExact)) {
+          exactTotal = 0;
+          warnings.push(
+            isTl
+              ? 'Maglagay ng wastong numero para sa aktwal na kabuuang basic salary na kinita.'
+              : 'Please enter a valid number for actual total basic salary earned.'
+          );
+        } else if (parsedExact < 0) {
+          exactTotal = 0;
+          warnings.push(isTl ? 'Hindi maaaring negatibo ang aktwal na kabuuang basic salary na kinita.' : 'Actual total basic salary earned cannot be negative.');
+        } else {
+          exactTotal = parsedExact;
+        }
       }
     }
 
@@ -229,7 +282,7 @@
     }
 
     if (resMonthlyEquivalent) {
-      resMonthlyEquivalent.textContent = formatPHP(res.monthlySalary);
+      resMonthlyEquivalent.textContent = formatPHP(res.effectiveMonthlySalary);
     }
 
     if (resCalculationFormula) {
@@ -250,10 +303,21 @@
 
     // Prorated vs Full-Year Badge
     if (resProratedBadge) {
-      if (res.monthsWorked < 1 && res.totalBasicEarned === 0) {
+      if (res.isCustomTotal && res.totalBasicEarned <= 0) {
+        resProratedBadge.textContent = isTl ? 'Walang Nailagay na Basic Salary' : 'No Basic Salary Entered';
+        resProratedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700';
+      } else if (res.isCustomTotal && res.totalBasicEarned > 0) {
+        resProratedBadge.textContent = isTl
+          ? 'Custom na Taunang Kita'
+          : 'Custom Annual Earnings';
+        resProratedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800';
+      } else if (res.monthsWorked < 1 && res.totalBasicEarned === 0) {
         resProratedBadge.textContent = isTl ? '0 Buwang Ipinasok' : '0 Months Rendered';
         resProratedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800';
-      } else if (res.isProrated) {
+      } else if (res.totalBasicEarned <= 0) {
+        resProratedBadge.textContent = isTl ? 'Walang Nailagay na Kita' : 'No Earnings Entered';
+        resProratedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700';
+      } else if (res.monthsWorked < 12) {
         resProratedBadge.textContent = isTl
           ? `Prorated na Tantiya (${res.monthsWorked}/12 buwan)`
           : `Prorated Estimate (${res.monthsWorked}/12 mos)`;
@@ -268,17 +332,17 @@
 
     // DOLE Eligibility Note
     if (resEligibilityNote) {
-      if (res.monthsWorked < 1 && res.totalBasicEarned <= 0) {
-        resEligibilityNote.textContent = isTl
-          ? 'Sa ilalim ng DOLE Presidential Decree No. 851, kailangang nakapagtrabaho nang hindi bababa sa isang (1) buong buwan sa loob ng calendar year ang rank-and-file na empleyado upang maging kwalipikado sa statutory 13th month pay.'
-          : 'Under DOLE Presidential Decree No. 851, rank-and-file employees must render at least one (1) full month of service during the calendar year to qualify for statutory 13th month pay.';
-        resEligibilityNote.className = 'text-xs text-amber-700 bg-amber-50 p-2.5 rounded-lg border border-amber-200 mt-3';
-        resEligibilityNote.classList.remove('hidden');
-      } else if (res.monthsWorked < 1 && res.totalBasicEarned > 0) {
+      if (res.isCustomTotal && res.monthsWorked < 1 && res.totalBasicEarned > 0) {
         resEligibilityNote.textContent = isTl
           ? 'May inilagay na custom earnings. Paalala: Sa ilalim ng DOLE rules, karaniwang kailangan ang hindi bababa sa isang buwang serbisyo sa loob ng calendar year.'
           : 'Custom earnings entered. Note: DOLE rules generally require at least one month of service rendered during the calendar year.';
         resEligibilityNote.className = 'text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-200 mt-3';
+        resEligibilityNote.classList.remove('hidden');
+      } else if (!res.isEligible && res.monthsWorked < 1) {
+        resEligibilityNote.textContent = isTl
+          ? 'Sa ilalim ng DOLE Presidential Decree No. 851, kailangang nakapagtrabaho nang hindi bababa sa isang (1) buong buwan sa loob ng calendar year ang rank-and-file na empleyado upang maging kwalipikado sa statutory 13th month pay.'
+          : 'Under DOLE Presidential Decree No. 851, rank-and-file employees must render at least one (1) full month of service during the calendar year to qualify for statutory 13th month pay.';
+        resEligibilityNote.className = 'text-xs text-amber-700 bg-amber-50 p-2.5 rounded-lg border border-amber-200 mt-3';
         resEligibilityNote.classList.remove('hidden');
       } else {
         resEligibilityNote.classList.add('hidden');
@@ -406,8 +470,10 @@
           customTotalContainer.classList.remove('hidden');
           // If empty, prefill with current calculated amount
           if (exactTotalInput && (!exactTotalInput.value || exactTotalInput.value === '0')) {
-            const m = parseFloat(monthlySalaryInput.value) || 0;
-            const mos = parseFloat(monthsWorkedInput.value) || 12;
+            const parsedM = parseCleanNumber(monthlySalaryInput.value);
+            const parsedMos = parseCleanNumber(monthsWorkedInput.value);
+            const m = (!isNaN(parsedM) && parsedM > 0) ? parsedM : 0;
+            const mos = (!isNaN(parsedMos) && parsedMos >= 0) ? Math.min(12, parsedMos) : 12;
             exactTotalInput.value = (m * mos).toFixed(2);
           }
         } else {

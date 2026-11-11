@@ -3,7 +3,6 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="google" content="notranslate" />
     <title>Legal at Pinansyal na Disclaimer — SuweldoTools</title>
     <meta
       name="description"
@@ -92,7 +91,7 @@
   <body class="min-h-full flex flex-col font-sans antialiased text-slate-800 bg-slate-50 selection:bg-emerald-100 selection:text-emerald-900">
     <!-- Header / Navigation Bar -->
     <header class="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur-md">
-      <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-3 sm:px-4 lg:px-4 xl:px-8 gap-2 sm:gap-3 xl:gap-4">
+      <div class="mx-auto flex h-16 lg:h-[74px] max-w-6xl items-center justify-between px-3 sm:px-4 lg:px-6 xl:px-8 gap-2 sm:gap-3 lg:gap-6 xl:gap-7">
         <a href="/tl/" class="flex items-center gap-2 sm:gap-2.5 group min-w-0 shrink-0">
           <img
             src="/assets/aistudio/suweldotools-logo-icon_7c91e4ab.svg"
@@ -103,32 +102,25 @@
           />
           <div class="flex flex-col min-w-0">
             <span class="text-base sm:text-lg font-bold tracking-tight text-slate-900 group-hover:text-emerald-700 transition leading-tight truncate">SuweldoTools</span>
-            <span class="hidden min-[360px]:block text-[9px] sm:text-[10px] uppercase font-semibold tracking-tight sm:tracking-wider text-slate-500 leading-tight truncate">Philippines Payroll Utilities</span>
+            <span class="hidden min-[360px]:block text-[9px] sm:text-[10px] uppercase font-semibold tracking-tight sm:tracking-wider text-slate-500 leading-tight truncate">Sahod Calculators ng Pilipinas</span>
           </div>
         </a>
 
         <!-- Desktop Navigation (Hidden on all viewports for Filipino language) -->
-        <nav aria-label="Pangunahing nabigasyon" class="hidden">
-            <a href="/tl/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
+        <nav aria-label="Pangunahing nabigasyon" class="hidden lg:flex lg:items-center lg:ml-auto lg:gap-5 xl:gap-6 text-sm font-medium text-slate-600">
+            <a href="/tl/" class="inline-flex items-center px-1 py-1.5 text-slate-600 hover:text-emerald-600 border-b-2 border-transparent hover:border-emerald-600/30 transition-colors duration-150 whitespace-nowrap">
               Home
             </a>
-            <a href="/tl/take-home-pay-calculator-philippines/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
-              Take-Home Pay
+            <a href="/tl/calculators/" class="inline-flex items-center px-1 py-1.5 text-slate-600 hover:text-emerald-600 border-b-2 border-transparent hover:border-emerald-600/30 transition-colors duration-150 whitespace-nowrap">
+              Calculators
             </a>
-            <a href="/tl/13th-month-pay-calculator/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
-              13th Month Pay
-            </a>
-            <a href="/tl/sss-contribution-table-2026/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
-              Talahanayan ng SSS 2026
-            </a>
-            <a href="/tl/philhealth-contribution-calculator/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">PhilHealth Contribution Calculator</a>
-            <a href="/tl/blog/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
+            <a href="/tl/blog/" class="inline-flex items-center px-1 py-1.5 text-slate-600 hover:text-emerald-600 border-b-2 border-transparent hover:border-emerald-600/30 transition-colors duration-150 whitespace-nowrap">
               Blog
             </a>
-            <a href="/tl/about/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
+            <a href="/tl/about/" class="inline-flex items-center px-1 py-1.5 text-slate-600 hover:text-emerald-600 border-b-2 border-transparent hover:border-emerald-600/30 transition-colors duration-150 whitespace-nowrap">
               Tungkol sa Amin
             </a>
-            <a href="/tl/contact/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
+            <a href="/tl/contact/" class="inline-flex items-center px-1 py-1.5 text-slate-600 hover:text-emerald-600 border-b-2 border-transparent hover:border-emerald-600/30 transition-colors duration-150 whitespace-nowrap">
               Makipag-ugnayan
             </a>
           </nav>
@@ -183,7 +175,7 @@
             aria-expanded="false"
             aria-controls="mobileNavigationPanel"
             aria-label="Buksan ang menu ng nabigasyon"
-            class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition cursor-pointer"
+            class="inline-flex lg:hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition cursor-pointer"
           >
             <svg id="mobile-menu-icon-open" data-menu-icon="open" data-mobile-menu-open-icon class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
@@ -245,31 +237,10 @@
             <span class="text-xs text-slate-400">&rarr;</span>
           </a>
           <a
-            href="/tl/take-home-pay-calculator-philippines/"
+            href="/tl/calculators/"
             class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
           >
-            <span>Take-Home Pay</span>
-            <span class="text-xs text-slate-400">&rarr;</span>
-          </a>
-          <a
-            href="/tl/13th-month-pay-calculator/"
-            class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
-          >
-            <span>13th Month Pay</span>
-            <span class="text-xs text-slate-400">&rarr;</span>
-          </a>
-          <a
-            href="/tl/sss-contribution-table-2026/"
-            class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
-          >
-            <span>Talahanayan ng SSS 2026</span>
-            <span class="text-xs text-slate-400">&rarr;</span>
-          </a>
-          <a
-            href="/tl/philhealth-contribution-calculator/"
-            class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
-          >
-            <span>PhilHealth Contribution Calculator</span>
+            <span>Calculators</span>
             <span class="text-xs text-slate-400">&rarr;</span>
           </a>
           <a
@@ -335,7 +306,7 @@
         <section>
           <h2 class="text-lg sm:text-xl font-bold text-slate-900 mb-2">1. Walang Propesyonal na Pinansyal, Tax, o Legal na Payo</h2>
           <p>
-            Ang software, mga kalkulasyon, artikulo, talahanayan, at breakdown ng mga numero na makikita sa <strong>SuweldoTools</strong> (suweldotools.com) ay inilaan lamang para sa pangkalahatang personal na pagtatantiya, sangguniang pang-edukasyon, at gabay sa impormasyon. Walang anumang nilalaman sa website na ito ang dapat ituring bilang pormal na financial planning, accounting advice, legal na payo, o opisyal na tax preparation service.
+            Ang software, <a href="/tl/calculators/" class="text-emerald-700 font-semibold hover:underline rounded-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">mga kalkulasyon</a>, artikulo, talahanayan, at breakdown ng mga numero na makikita sa <strong>SuweldoTools</strong> (suweldotools.com) ay inilaan lamang para sa pangkalahatang personal na pagtatantiya, sangguniang pang-edukasyon, at gabay sa impormasyon. Walang anumang nilalaman sa website na ito ang dapat ituring bilang pormal na financial planning, accounting advice, legal na payo, o opisyal na tax preparation service.
           </p>
           <p class="mt-2">
             Hindi mo dapat gamitin ang calculator na ito bilang kapalit ng opisyal na konsultasyon sa isang Certified Public Accountant (CPA), labor lawyer, o awtorisadong kinatawan mula sa mga kaukulang ahensya ng pamahalaan ng Pilipinas.
@@ -345,10 +316,10 @@
         <section>
           <h2 class="text-lg sm:text-xl font-bold text-slate-900 mb-2">2. Bakit Maaaring Magkaiba ang Iyong Payslip sa Tantiya ng Calculator</h2>
           <p>
-            Bagama't mahigpit na sinusunod ng aming mga mathematical formula ang mga inilathalang statutory tables para sa SSS, PhilHealth, Pag-IBIG Fund, at BIR TRAIN Law withholding brackets, ang aktwal na payslip ng iyong kompanya ay maaaring maglaman ng mga partikular na salik sa pasahod na hindi saklaw ng karaniwang formula, gaya ng:
+            Bagama't mahigpit na sinusunod ng aming mga mathematical formula ang mga inilathalang statutory tables para sa <a href="/tl/sss-contribution-table-2026/" class="text-emerald-700 font-semibold hover:underline rounded-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">SSS</a>, <a href="/tl/philhealth-contribution-calculator/" class="text-emerald-700 font-semibold hover:underline rounded-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">PhilHealth</a>, Pag-IBIG Fund, at <a href="/tl/take-home-pay-calculator-philippines/" class="text-emerald-700 font-semibold hover:underline rounded-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">BIR TRAIN Law withholding brackets</a>, ang aktwal na payslip ng iyong kompanya ay maaaring maglaman ng mga partikular na salik sa pasahod na hindi saklaw ng karaniwang formula, gaya ng:
           </p>
           <ul class="list-disc pl-5 mt-2 space-y-1.5 text-slate-700">
-            <li><strong>Boluntaryong Kaltas sa Programa:</strong> Pag-IBIG MP2 (Modified Pag-IBIG II) savings, SSS WISP Plus, o boluntaryong retirement funds ng kompanya.</li>
+            <li><strong>Boluntaryong Kaltas sa Programa:</strong> <a href="/tl/pagibig-mp2-savings-estimator/" class="text-emerald-700 font-semibold hover:underline rounded-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">Pag-IBIG MP2</a> (Modified Pag-IBIG II) savings, SSS WISP Plus, o boluntaryong retirement funds ng kompanya.</li>
             <li><strong>Health at Insurance Premiums:</strong> Kaltas para sa HMO dependents ng kompanya, group life insurance, o dental plans.</li>
             <li><strong>Mga Adjustment sa Oras ng Pasok:</strong> Unexcused absences, tardiness (late), undertime penalties, o leave without pay (LWOP).</li>
             <li><strong>Non-Taxable Allowances at De Minimis:</strong> Tax-exempt na de minimis benefits sa loob ng statutory limits (rice subsidy, uniform allowance, laundry allowance).</li>
@@ -362,6 +333,9 @@
           <p>
             Ang mga statutory contribution rates sa Pilipinas ay maaaring magbago batay sa mga bagong executive order, circular ng ahensya, desisyon ng korte, at pag-amyenda sa batas. Bagama't sinisikap naming mapanatili ang ganap na katumpakan at agad na i-update ang aming mga formula kapag may bagong inilabas na statutory table, hindi ginagarantiyahan ng SuweldoTools na ang bawat kalkulasyon ay 100% na tutugma sa bawat enterprise payroll system.
           </p>
+          <p class="mt-2">
+            Maaari mong suriin ang aming <a href="/tl/sources/" class="text-emerald-700 font-semibold hover:underline rounded-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">Mga Opisyal na Sanggunian</a> para sa mga basehan sa batas, basahin ang aming <a href="/tl/editorial-policy/" class="text-emerald-700 font-semibold hover:underline rounded-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">Patakaran sa Editoryal</a> at <a href="/tl/about/" class="text-emerald-700 font-semibold hover:underline rounded-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">Tungkol sa SuweldoTools</a> para sa impormasyon tungkol sa aming pananaliksik at pamamaraan, o tingnan ang aming <a href="/tl/corrections-policy/" class="text-emerald-700 font-semibold hover:underline rounded-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">Patakaran sa Pagwawasto</a> upang mag-ulat ng posibleng error o hindi na napapanahong impormasyon.
+          </p>
         </section>
 
         <section>
@@ -370,15 +344,38 @@
             Sa anumang pagkakataon ay hindi mananagot ang SuweldoTools, ang mga bumuo nito, o mga kaanib nito para sa anumang direkta, hindi direkta, o nagresultang pinsala mula sa paggamit o hindi paggamit ng website na ito, o mula sa mga desisyong ginawa batay sa mga numerong nabuo ng aming mga tool.
           </p>
         </section>
+
+        <!-- Related Resources -->
+        <section class="pt-6 border-t border-slate-100">
+          <h2 class="text-base sm:text-lg font-bold text-slate-900 mb-3">Mga Kaugnay na Sanggunian</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <a href="/tl/sources/" class="group block rounded-xl border border-slate-200 bg-slate-50/70 p-4 hover:border-emerald-300 hover:bg-emerald-50/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
+              <div class="font-bold text-slate-900 group-hover:text-emerald-700 text-sm">Mga Opisyal na Sanggunian →</div>
+              <p class="text-xs text-slate-600 mt-1">Tingnan ang mga opisyal na batas, circular, at talahanayan ng kontribusyon mula sa BIR, SSS, PhilHealth, Pag-IBIG, at DOLE.</p>
+            </a>
+            <a href="/tl/editorial-policy/" class="group block rounded-xl border border-slate-200 bg-slate-50/70 p-4 hover:border-emerald-300 hover:bg-emerald-50/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
+              <div class="font-bold text-slate-900 group-hover:text-emerald-700 text-sm">Patakaran sa Editoryal →</div>
+              <p class="text-xs text-slate-600 mt-1">Alamin kung paano namin sinasaliksik, binubuo, at biniberipika ang aming mga formula at gabay sa pasahod.</p>
+            </a>
+            <a href="/tl/corrections-policy/" class="group block rounded-xl border border-slate-200 bg-slate-50/70 p-4 hover:border-emerald-300 hover:bg-emerald-50/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
+              <div class="font-bold text-slate-900 group-hover:text-emerald-700 text-sm">Patakaran sa Pagwawasto →</div>
+              <p class="text-xs text-slate-600 mt-1">Alamin kung paano mag-ulat ng error sa kalkulasyon o hindi na napapanahong impormasyon sa buwis at kontribusyon.</p>
+            </a>
+            <a href="/tl/about/" class="group block rounded-xl border border-slate-200 bg-slate-50/70 p-4 hover:border-emerald-300 hover:bg-emerald-50/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
+              <div class="font-bold text-slate-900 group-hover:text-emerald-700 text-sm">Tungkol sa SuweldoTools →</div>
+              <p class="text-xs text-slate-600 mt-1">Basahin ang tungkol sa aming misyon at pamamaraan sa pagbuo ng mga libreng payroll calculator para sa mga manggagawang Pilipino.</p>
+            </a>
+          </div>
+        </section>
       </article>
     </main>
 
     <!-- Footer Component -->
     <footer class="mt-12 sm:mt-16 border-t border-slate-200 bg-white text-slate-600 text-sm">
       <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-        <div class="grid grid-cols-2 md:grid-cols-12 gap-x-6 gap-y-6 lg:gap-x-8 pb-8 border-b border-slate-100">
+        <div class="grid grid-cols-2 lg:grid-cols-12 gap-x-6 gap-y-6 lg:gap-x-8 pb-8 border-b border-slate-100">
           <!-- Brand Section -->
-          <div class="col-span-2 md:col-span-5 space-y-3">
+          <div class="col-span-2 lg:col-span-3 space-y-3">
             <a href="/tl/" class="inline-flex items-center gap-2.5 group rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2">
               <img
                 src="/assets/aistudio/suweldotools-logo-icon_7c91e4ab.svg"
@@ -388,7 +385,7 @@
               <span class="font-bold text-slate-900 text-base group-hover:text-emerald-700 transition">SuweldoTools</span>
             </a>
             <p class="text-xs sm:text-sm text-slate-500 max-w-sm leading-relaxed mt-1">
-              Mabilis, tumpak, at mobile-friendly na mga salary tool at statutory contribution calculators para sa mga empleyadong Pilipino, freelancer, at HR professionals.
+              Tinutulungan ang mga Pilipino na maunawaan ang kanilang sahod, kuwentahin ang take-home pay, at tantyahin ang mga kontribusyon sa gobyerno gamit ang libre at madaling gamiting mga payroll calculator.
             </p>
             <p class="text-xs text-slate-400">
               Domain: <a href="https://suweldotools.com/tl/" class="text-slate-500 hover:text-emerald-700 hover:underline transition rounded-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">suweldotools.com</a>
@@ -396,8 +393,8 @@
           </div>
 
           <!-- Tools Section -->
-          <div class="col-span-1 md:col-span-3 space-y-3">
-            <p class="font-bold text-xs uppercase tracking-wider text-slate-900">Salary Tools</p>
+          <div class="col-span-1 lg:col-span-3 space-y-3">
+            <p class="font-bold text-xs uppercase tracking-wider text-slate-900">All Calculators</p>
             <ul class="space-y-2.5 text-xs sm:text-sm">
               <li>
                 <a href="/tl/take-home-pay-calculator-philippines/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Take-Home Pay Calculator</a>
@@ -411,11 +408,20 @@
               <li>
                 <a href="/tl/philhealth-contribution-calculator/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">PhilHealth Contribution Calculator</a>
               </li>
+              <li>
+                <a href="/tl/overtime-holiday-pay-calculator-philippines/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Overtime at Holiday Pay Calculator</a>
+              </li>
+              <li>
+                <a href="/tl/pagibig-mp2-savings-estimator/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Pag-IBIG at MP2 Savings Estimator</a>
+              </li>
+              <li>
+                <a href="/tl/final-pay-calculator-philippines/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Kalkulador ng Final Pay</a>
+              </li>
             </ul>
           </div>
 
           <!-- Company Section -->
-          <div class="col-span-1 md:col-span-2 space-y-3">
+          <div class="col-span-1 lg:col-span-2 space-y-3">
             <p class="font-bold text-xs uppercase tracking-wider text-slate-900">Kumpanya</p>
             <ul class="space-y-2.5 text-xs sm:text-sm">
               <li>
@@ -430,15 +436,31 @@
             </ul>
           </div>
 
+          <!-- Resources Section -->
+          <div class="col-span-1 lg:col-span-2 space-y-3">
+            <p class="font-bold text-xs uppercase tracking-wider text-slate-900">Mga Sanggunian</p>
+            <ul class="space-y-2.5 text-xs sm:text-sm">
+              <li>
+                <a href="/tl/sources/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Mga Opisyal na Sanggunian</a>
+              </li>
+              <li>
+                <a href="/tl/editorial-policy/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Patakarang Editoryal</a>
+              </li>
+              <li>
+                <a href="/tl/corrections-policy/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Patakaran sa Pagwawasto</a>
+              </li>
+            </ul>
+          </div>
+
           <!-- Legal Section -->
-          <div class="col-span-2 md:col-span-2 space-y-3">
+          <div class="col-span-1 lg:col-span-2 space-y-3">
             <p class="font-bold text-xs uppercase tracking-wider text-slate-900">Legal</p>
             <ul class="space-y-2.5 text-xs sm:text-sm">
               <li>
                 <a href="/tl/privacy-policy/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Patakaran sa Privacy</a>
               </li>
               <li>
-                <a href="/tl/disclaimer/" class="text-emerald-700 font-semibold hover:underline" aria-current="page">Disclaimer</a>
+                <a href="/tl/disclaimer/" class="text-emerald-700 font-semibold hover:underline transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1" aria-current="page">Pagtatanggi (Disclaimer)</a>
               </li>
             </ul>
           </div>
@@ -484,7 +506,7 @@
               </svg>
             </a>
             <a
-              href="https://pin.it/4fRe9WNxE"
+              href="https://www.pinterest.com/suweldotools/"
               target="_blank"
               rel="noopener noreferrer"
               class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#E60023] text-white shadow-xs transition-all duration-200 motion-safe:hover:-translate-y-0.5 hover:bg-[#cc001f] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E60023] focus-visible:ring-offset-2"

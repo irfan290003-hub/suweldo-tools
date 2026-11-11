@@ -1,8 +1,8 @@
 import tailwindcss from '@tailwindcss/vite';
-import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import path from 'path';
 import {defineConfig} from 'vite';
+import {handleBrandedImageRequest} from './functions/images/[[path]].ts';
 import {generatePublicBlog} from './scripts/generate-blog.ts';
 
 export default defineConfig(() => {
@@ -39,13 +39,54 @@ export default defineConfig(() => {
 
   const mpaCleanUrlPlugin = {
     name: 'mpa-clean-url-rewrite',
-    configureServer(server: {middlewares: {use: (fn: (req: {url?: string; method?: string}, res: any, next: () => void) => void) => void}}) {
+    configureServer(server: {middlewares: {use: (fn: (req: {url?: string; method?: string; headers?: Record<string, string | string[] | undefined>}, res: any, next: () => void) => void) => void}}) {
       // Initial sync when dev server starts so static /blog/ and /tl/blog/ pages match Supabase
       void syncStaticBlogPages(true);
 
       server.middlewares.use(async (req, res, next) => {
         if (req.url) {
           const [pathname, search] = req.url.split('?');
+
+          if (pathname === '/images' || pathname.startsWith('/images/')) {
+            const reqHeaders = new Headers();
+            if (req.headers) {
+              for (const [key, val] of Object.entries(req.headers)) {
+                if (typeof val === 'string') {
+                  reqHeaders.set(key, val);
+                } else if (Array.isArray(val)) {
+                  reqHeaders.set(key, val.join(', '));
+                }
+              }
+            }
+            const method = (req.method || 'GET').toUpperCase();
+            const fullReqUrl = `https://suweldotools.com${req.url}`;
+            const webReq = new Request(fullReqUrl, {
+              method,
+              headers: reqHeaders,
+            });
+
+            const proxyRes = await handleBrandedImageRequest({
+              request: webReq,
+              env: {
+                VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL,
+                VITE_SUPABASE_BLOG_IMAGES_BUCKET: process.env.VITE_SUPABASE_BLOG_IMAGES_BUCKET,
+              },
+            });
+
+            res.statusCode = proxyRes.status;
+            proxyRes.headers.forEach((value, key) => {
+              res.setHeader(key, value);
+            });
+
+            if (method === 'HEAD' || !proxyRes.body) {
+              res.end();
+              return;
+            }
+
+            const arrayBuffer = await proxyRes.arrayBuffer();
+            res.end(Buffer.from(arrayBuffer));
+            return;
+          }
 
           if (pathname === '/__suweldotools/regenerate-blog' && req.method === 'POST') {
             const result = (await syncStaticBlogPages(true)) as {
@@ -95,12 +136,44 @@ export default defineConfig(() => {
             }
           }
         }
+
+        const origEnd = res.end.bind(res);
+        res.end = function (chunk?: any, encodingOrCb?: any, cb?: any) {
+          const contentType = String(
+            res.getHeader?.('content-type') || res.getHeader?.('Content-Type') || ''
+          ).toLowerCase();
+          if (chunk && contentType.includes('text/html')) {
+            const rawHtml =
+              typeof chunk === 'string'
+                ? chunk
+                : Buffer.isBuffer(chunk)
+                  ? chunk.toString('utf8')
+                  : null;
+            if (rawHtml && rawHtml.includes('https://suweldotools.com/images/')) {
+              const rewrittenHtml = rawHtml.replaceAll(
+                'https://suweldotools.com/images/',
+                '/images/'
+              );
+              if (res.getHeader?.('content-length') || res.getHeader?.('Content-Length')) {
+                res.setHeader('Content-Length', Buffer.byteLength(rewrittenHtml, 'utf8'));
+              }
+              return origEnd(
+                Buffer.isBuffer(chunk) ? Buffer.from(rewrittenHtml, 'utf8') : rewrittenHtml,
+                encodingOrCb,
+                cb
+              );
+            }
+          }
+          return origEnd(chunk, encodingOrCb, cb);
+        };
+
         next();
       });
     },
   };
   const staticInputs: Record<string, string> = {
     main: path.resolve(rootDir, 'index.html'),
+    calculators: path.resolve(rootDir, 'calculators/index.html'),
     takeHomePay: path.resolve(rootDir, 'take-home-pay-calculator-philippines/index.html'),
     thirteenthMonth: path.resolve(rootDir, '13th-month-pay-calculator/index.html'),
     sssTable: path.resolve(rootDir, 'sss-contribution-table-2026/index.html'),
@@ -108,10 +181,17 @@ export default defineConfig(() => {
     privacy: path.resolve(rootDir, 'privacy-policy/index.html'),
     contact: path.resolve(rootDir, 'contact/index.html'),
     disclaimer: path.resolve(rootDir, 'disclaimer/index.html'),
+    sources: path.resolve(rootDir, 'sources/index.html'),
+    editorialPolicy: path.resolve(rootDir, 'editorial-policy/index.html'),
+    correctionsPolicy: path.resolve(rootDir, 'corrections-policy/index.html'),
+    authorMohammadIrfan: path.resolve(rootDir, 'authors/mohammad-irfan/index.html'),
     philhealth: path.resolve(rootDir, 'philhealth-contribution-calculator/index.html'),
     overtimeHoliday: path.resolve(rootDir, 'overtime-holiday-pay-calculator-philippines/index.html'),
+    pagibigMp2: path.resolve(rootDir, 'pagibig-mp2-savings-estimator/index.html'),
+    finalPay: path.resolve(rootDir, 'final-pay-calculator-philippines/index.html'),
     blog: path.resolve(rootDir, 'blog/index.html'),
     tlMain: path.resolve(rootDir, 'tl/index.html'),
+    tlCalculators: path.resolve(rootDir, 'tl/calculators/index.html'),
     tlTakeHomePay: path.resolve(rootDir, 'tl/take-home-pay-calculator-philippines/index.html'),
     tlThirteenthMonth: path.resolve(rootDir, 'tl/13th-month-pay-calculator/index.html'),
     tlSssTable: path.resolve(rootDir, 'tl/sss-contribution-table-2026/index.html'),
@@ -119,13 +199,22 @@ export default defineConfig(() => {
     tlPrivacy: path.resolve(rootDir, 'tl/privacy-policy/index.html'),
     tlContact: path.resolve(rootDir, 'tl/contact/index.html'),
     tlDisclaimer: path.resolve(rootDir, 'tl/disclaimer/index.html'),
+    tlSources: path.resolve(rootDir, 'tl/sources/index.html'),
+    tlEditorialPolicy: path.resolve(rootDir, 'tl/editorial-policy/index.html'),
+    tlCorrectionsPolicy: path.resolve(rootDir, 'tl/corrections-policy/index.html'),
+    tlAuthorMohammadIrfan: path.resolve(rootDir, 'tl/authors/mohammad-irfan/index.html'),
     tlPhilhealth: path.resolve(rootDir, 'tl/philhealth-contribution-calculator/index.html'),
     tlOvertimeHoliday: path.resolve(rootDir, 'tl/overtime-holiday-pay-calculator-philippines/index.html'),
+    tlPagibigMp2: path.resolve(rootDir, 'tl/pagibig-mp2-savings-estimator/index.html'),
+    tlFinalPay: path.resolve(rootDir, 'tl/final-pay-calculator-philippines/index.html'),
     tlBlog: path.resolve(rootDir, 'tl/blog/index.html'),
     admin: path.resolve(rootDir, 'admin/index.html'),
   };
 
-  const seenInputPaths = new Set<string>(Object.values(staticInputs));
+  const existingStaticInputs = Object.fromEntries(
+    Object.entries(staticInputs).filter(([, filePath]) => fs.existsSync(filePath))
+  );
+  const seenInputPaths = new Set<string>(Object.values(existingStaticInputs));
   const validSlugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
   const generatorOwnershipMarker = '<!-- SUWELDOTOOLS_GENERATED_BLOG_POST -->';
 
@@ -161,17 +250,8 @@ export default defineConfig(() => {
     return discovered;
   };
 
-  const GA4_MEASUREMENT_ID = 'G-E3Z696ZY0J';
-  const GA4_HEAD_SNIPPET = `    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=${GA4_MEASUREMENT_ID}"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('set', 'allow_google_signals', false);
-      gtag('set', 'allow_ad_personalization_signals', false);
-      gtag('config', '${GA4_MEASUREMENT_ID}');
-    </script>`;
+  const COOKIE_CONSENT_HEAD_SNIPPET = `    <!-- Cookie Consent & Strict GA4 Controller -->
+    <script src="/js/cookie-consent.js" defer></script>`;
 
   const ga4InjectionPlugin = {
     name: 'suweldotools-ga4-injection',
@@ -187,34 +267,39 @@ export default defineConfig(() => {
         return html;
       }
 
-      if (
-        html.includes(GA4_MEASUREMENT_ID) ||
-        html.includes('googletagmanager.com/gtag/js')
-      ) {
-        return html;
+      let transformed = html;
+
+      if (!transformed.includes('/js/cookie-consent.js') && transformed.includes('</head>')) {
+        transformed = transformed.replace('</head>', `${COOKIE_CONSENT_HEAD_SNIPPET}\n  </head>`);
       }
 
-      if (html.includes('</head>')) {
-        return html.replace('</head>', `${GA4_HEAD_SNIPPET}\n  </head>`);
+      if (!transformed.includes('data-cookie-settings-trigger') && transformed.includes('<footer')) {
+        const isFilipinoPage =
+          /<html[^>]*\blang=["'](?:tl|fil)/i.test(transformed) ||
+          normalizedPath === '/tl' ||
+          normalizedPath.startsWith('/tl/') ||
+          normalizedFilename.includes('/tl/');
+        const footerLabel = isFilipinoPage ? 'Mga Setting ng Cookie' : 'Cookie Settings';
+        const footerBtnItem = `              <li>\n                <button type="button" id="cookieSettingsFooterBtn" data-cookie-settings-trigger class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1 cursor-pointer text-left">${footerLabel}</button>\n              </li>`;
+
+        transformed = transformed.replace(
+          /(<li>\s*<a[^>]+href=["']\/(?:tl\/)?disclaimer\/["'][^>]*>[\s\S]*?<\/a>\s*<\/li>)/i,
+          `$1\n${footerBtnItem}`
+        );
       }
 
-      return html;
+      return transformed;
     },
   };
 
   return {
     appType: 'mpa' as const,
-    plugins: [mpaCleanUrlPlugin, ga4InjectionPlugin, react(), tailwindcss()],
-    resolve: {
-      alias: {
-        '@': path.resolve(rootDir, '.'),
-      },
-    },
+    plugins: [mpaCleanUrlPlugin, ga4InjectionPlugin, tailwindcss()],
     build: {
       outDir: 'dist',
       rollupOptions: {
         input: {
-          ...staticInputs,
+          ...existingStaticInputs,
           ...discoverGeneratedBlogInputs('blog', 'blogArticle'),
           ...discoverGeneratedBlogInputs('tl/blog', 'tlBlogArticle'),
         },

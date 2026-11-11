@@ -35,8 +35,9 @@ const PLACEHOLDER_KEY_VALUES = new Set([
 let cachedClient: SupabaseClient | null = null;
 
 function readEnvValues(): { url: string; anonKey: string } {
-  const rawUrl = import.meta.env.VITE_SUPABASE_URL;
-  const rawKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const env = (import.meta as { env?: Record<string, unknown> }).env || {};
+  const rawUrl = env.VITE_SUPABASE_URL;
+  const rawKey = env.VITE_SUPABASE_ANON_KEY;
   return {
     url: typeof rawUrl === 'string' ? rawUrl.trim().replace(/\/+$/, '') : '',
     anonKey: typeof rawKey === 'string' ? rawKey.trim() : '',
@@ -241,7 +242,8 @@ export async function verifyBlogAdminAccess(
 }
 
 export type BlogLanguage = 'en' | 'tl';
-export type BlogPostStatus = 'draft' | 'published';
+export type BlogPostStatus = 'draft' | 'published' | 'archived';
+export type BlogUpdateDateMode = 'keep' | 'now' | 'custom';
 
 export interface BlogFaqItem {
   question: string;
@@ -263,6 +265,7 @@ export interface BlogPostRecord {
   author_name: string | null;
   faqs: BlogFaqItem[];
   status: BlogPostStatus;
+  first_published_at: string | null;
   published_at: string | null;
   created_at: string;
   updated_at: string;
@@ -285,6 +288,10 @@ export interface BlogPostWriteInput {
   author_name?: string | null;
   faqs?: BlogFaqItem[] | null;
   status: BlogPostStatus;
+  update_date_mode?: BlogUpdateDateMode | null;
+  custom_updated_at?: string | null;
+  first_published_at?: string | null;
+  published_at?: string | null;
 }
 
 export type AdminBlogFetchResult =
@@ -315,6 +322,7 @@ export type AdminBlogImageUploadResult =
       status: 'ok';
       ok: true;
       publicUrl: string;
+      storagePublicUrl?: string;
       objectPath: string;
     }
   | { status: 'unauthorized'; ok: false; message: string; error: string }
@@ -430,14 +438,208 @@ declare global {
   }
 }
 
-const BLOG_POST_SELECT_COLUMNS =
+export const BLOG_POST_SELECT_COLUMNS =
+  'id, group_id, language, title, slug, excerpt, content, seo_title, meta_description, featured_image_url, featured_image_alt, author_name, faqs, status, first_published_at, published_at, created_at, updated_at, created_by, updated_by';
+
+const BLOG_POST_SELECT_COLUMNS_LEGACY =
   'id, group_id, language, title, slug, excerpt, content, seo_title, meta_description, featured_image_url, featured_image_alt, author_name, faqs, status, published_at, created_at, updated_at, created_by, updated_by';
 
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
+const MANILA_LOCAL_DATETIME_REGEX =
+  /^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/;
 
 function isValidUuid(value: string): boolean {
   return typeof value === 'string' && UUID_REGEX.test(value.trim());
+}
+
+/**
+ * Parses a datetime-local string in Asia/Manila time (`YYYY-MM-DDTHH:mm` or `YYYY-MM-DDTHH:mm:ss`)
+ * or an explicit ISO-8601 timestamp with offset into a canonical UTC ISO-8601 string (`...Z`).
+ */
+export function parseManilaDateTimeInputToUtcIso(
+  rawInput: string | null | undefined
+): { ok: true; utcIso: string } | { ok: false; message: string } {
+  const trimmed = typeof rawInput === 'string' ? rawInput.trim() : '';
+  if (!trimmed) {
+    return {
+      ok: false,
+      message: 'Custom Last Updated date and time is required when Custom mode is selected.',
+    };
+  }
+
+  const localMatch = MANILA_LOCAL_DATETIME_REGEX.exec(trimmed);
+  if (localMatch) {
+    const year = Number(localMatch[1]);
+    const month = Number(localMatch[2]);
+    const day = Number(localMatch[3]);
+    const hour = Number(localMatch[4]);
+    const minute = Number(localMatch[5]);
+    const second = localMatch[6] ? Number(localMatch[6]) : 0;
+    const ms = localMatch[7] ? Number(localMatch[7].padEnd(3, '0')) : 0;
+
+    if (
+      year < 2000 ||
+      year > 2100 ||
+      month < 1 ||
+      month > 12 ||
+      day < 1 ||
+      day > 31 ||
+      hour < 0 ||
+      hour > 23 ||
+      minute < 0 ||
+      minute > 59 ||
+      second < 0 ||
+      second > 59
+    ) {
+      return {
+        ok: false,
+        message: 'Custom Last Updated date/time contains out-of-range calendar or clock values.',
+      };
+    }
+
+    // Verify exact calendar day validity (e.g., reject Feb 30)
+    const wallClockUtcMs = Date.UTC(year, month - 1, day, hour, minute, second, ms);
+    const checkDate = new Date(wallClockUtcMs);
+    if (
+      checkDate.getUTCFullYear() !== year ||
+      checkDate.getUTCMonth() !== month - 1 ||
+      checkDate.getUTCDate() !== day ||
+      checkDate.getUTCHours() !== hour ||
+      checkDate.getUTCMinutes() !== minute
+    ) {
+      return {
+        ok: false,
+        message: 'Custom Last Updated date is not a valid calendar date.',
+      };
+    }
+
+    const utcTimestampMs = wallClockUtcMs - MANILA_OFFSET_MS;
+    return {
+      ok: true,
+      utcIso: new Date(utcTimestampMs).toISOString(),
+    };
+  }
+
+  // If caller supplied an ISO string with explicit timezone offset (Z or +/-HH:MM)
+  if (/(?:Z|[+-]\d{2}:?\d{2})$/i.test(trimmed)) {
+    const parsedMs = Date.parse(trimmed);
+    if (!Number.isNaN(parsedMs)) {
+      return {
+        ok: true,
+        utcIso: new Date(parsedMs).toISOString(),
+      };
+    }
+  }
+
+  return {
+    ok: false,
+    message:
+      'Custom Last Updated date/time must be a valid Asia/Manila date and time (YYYY-MM-DDTHH:mm).',
+  };
+}
+
+/**
+ * Formats a UTC ISO timestamp into `YYYY-MM-DDTHH:mm` in Asia/Manila (`+08:00`)
+ * for populating `<input type="datetime-local">`.
+ */
+export function formatUtcIsoToManilaDateTimeLocal(
+  isoString: string | null | undefined
+): string {
+  if (!isoString || typeof isoString !== 'string') return '';
+  const parsedMs = Date.parse(isoString.trim());
+  if (Number.isNaN(parsedMs)) return '';
+
+  const manilaMs = parsedMs + MANILA_OFFSET_MS;
+  const d = new Date(manilaMs);
+  const year = String(d.getUTCFullYear()).padStart(4, '0');
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  const hours = String(d.getUTCHours()).padStart(2, '0');
+  const minutes = String(d.getUTCMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+/**
+ * Resolves the editorial `updated_at` behavior for an article save/update:
+ * - `keep` (default): omits `updated_at` so the PostgreSQL trigger preserves `OLD.updated_at`.
+ * - `now`: sends a fresh UTC ISO timestamp (`new Date().toISOString()`).
+ * - `custom`: parses the Asia/Manila input, validates `custom >= (first_published_at || published_at)`,
+ *   and sends the validated UTC ISO timestamp.
+ */
+export function resolveEditorialUpdateTimestamp(options: {
+  mode?: BlogUpdateDateMode | string | null;
+  customUpdatedAt?: string | null;
+  firstPublishedAt?: string | null;
+  publishedAt?: string | null;
+  nowDate?: Date;
+}):
+  | {
+      ok: true;
+      mode: BlogUpdateDateMode;
+      shouldSendUpdatedAt: boolean;
+      updatedAt?: string;
+    }
+  | { ok: false; message: string } {
+  const rawMode =
+    options.mode === undefined || options.mode === null || options.mode === ''
+      ? 'keep'
+      : String(options.mode).trim().toLowerCase();
+
+  if (rawMode !== 'keep' && rawMode !== 'now' && rawMode !== 'custom') {
+    return {
+      ok: false,
+      message: 'Update Date Mode must be "keep", "now", or "custom".',
+    };
+  }
+
+  if (rawMode === 'keep') {
+    return {
+      ok: true,
+      mode: 'keep',
+      shouldSendUpdatedAt: false,
+    };
+  }
+
+  if (rawMode === 'now') {
+    const nowIso = (options.nowDate || new Date()).toISOString();
+    return {
+      ok: true,
+      mode: 'now',
+      shouldSendUpdatedAt: true,
+      updatedAt: nowIso,
+    };
+  }
+
+  const parsedCustom = parseManilaDateTimeInputToUtcIso(options.customUpdatedAt);
+  if (!parsedCustom.ok) {
+    return parsedCustom;
+  }
+
+  const baselineIso =
+    (typeof options.firstPublishedAt === 'string' && options.firstPublishedAt.trim()) ||
+    (typeof options.publishedAt === 'string' && options.publishedAt.trim()) ||
+    null;
+
+  if (baselineIso) {
+    const baselineMs = Date.parse(baselineIso);
+    const customMs = Date.parse(parsedCustom.utcIso);
+    if (!Number.isNaN(baselineMs) && !Number.isNaN(customMs) && customMs < baselineMs) {
+      return {
+        ok: false,
+        message:
+          'Custom Last Updated date/time cannot be earlier than the original Published Date.',
+      };
+    }
+  }
+
+  return {
+    ok: true,
+    mode: 'custom',
+    shouldSendUpdatedAt: true,
+    updatedAt: parsedCustom.utcIso,
+  };
 }
 
 function normalizeFaqItemsFromDb(rawFaqs: unknown): BlogFaqItem[] {
@@ -455,11 +657,38 @@ function normalizeFaqItemsFromDb(rawFaqs: unknown): BlogFaqItem[] {
   return items;
 }
 
-function normalizeBlogPostRecord(raw: Record<string, unknown>): BlogPostRecord {
+export function normalizeFeaturedImageUrlToBranded(rawUrl: unknown): string | null {
+  const trimmed = typeof rawUrl === 'string' ? rawUrl.trim() : '';
+  if (!trimmed) return null;
+  const result = validateAndNormalizeFeaturedImageUrl(trimmed);
+  return result.ok ? result.url : trimmed;
+}
+
+export function normalizeBlogPostRecord(raw: Record<string, unknown>): BlogPostRecord {
   const rawAuthor = typeof raw.author_name === 'string' ? raw.author_name.trim() : '';
+  const rawStatus = typeof raw.status === 'string' ? raw.status.trim().toLowerCase() : 'draft';
+  const normalizedStatus: BlogPostStatus =
+    rawStatus === 'published'
+      ? 'published'
+      : rawStatus === 'archived'
+        ? 'archived'
+        : 'draft';
+  const rawFirstPub =
+    typeof raw.first_published_at === 'string' && raw.first_published_at.trim()
+      ? raw.first_published_at.trim()
+      : null;
+  const rawPub =
+    typeof raw.published_at === 'string' && raw.published_at.trim()
+      ? raw.published_at.trim()
+      : null;
+
   return {
     ...(raw as unknown as BlogPostRecord),
+    status: normalizedStatus,
+    first_published_at: rawFirstPub,
+    published_at: rawPub,
     author_name: rawAuthor ? rawAuthor : null,
+    featured_image_url: normalizeFeaturedImageUrlToBranded(raw.featured_image_url),
     faqs: normalizeFaqItemsFromDb(raw.faqs),
   };
 }
@@ -539,8 +768,13 @@ function formatDatabaseCrudError(error: {
   };
 }
 
-function validateAndNormalizeWriteInput(
-  input: BlogPostWriteInput
+export function validateAndNormalizeWriteInput(
+  input: BlogPostWriteInput,
+  options?: {
+    existingFirstPublishedAt?: string | null;
+    existingPublishedAt?: string | null;
+    nowDate?: Date;
+  }
 ):
   | {
       ok: true;
@@ -559,6 +793,9 @@ function validateAndNormalizeWriteInput(
         author_name: string | null;
         faqs: BlogFaqItem[];
         status: BlogPostStatus;
+        update_date_mode: BlogUpdateDateMode;
+        should_send_updated_at: boolean;
+        resolved_updated_at?: string;
       };
     }
   | { ok: false; message: string } {
@@ -568,8 +805,8 @@ function validateAndNormalizeWriteInput(
   }
 
   const status = input.status;
-  if (status !== 'draft' && status !== 'published') {
-    return { ok: false, message: 'Post status must be draft or published.' };
+  if (status !== 'draft' && status !== 'published' && status !== 'archived') {
+    return { ok: false, message: 'Post status must be draft, published, or archived.' };
   }
 
   const title = (input.title || '').trim();
@@ -627,17 +864,16 @@ function validateAndNormalizeWriteInput(
     };
   }
 
+  let normalizedFeaturedImageUrl: string | null = null;
   if (rawImageUrl) {
-    const validPrefix =
-      rawImageUrl.startsWith('https://') ||
-      rawImageUrl.startsWith('http://') ||
-      rawImageUrl.startsWith('/');
-    if (!validPrefix) {
+    const imageUrlValidation = validateAndNormalizeFeaturedImageUrl(rawImageUrl);
+    if (!imageUrlValidation.ok) {
       return {
         ok: false,
-        message: 'Featured Image URL must start with https://, http://, or /.',
+        message: imageUrlValidation.message,
       };
     }
+    normalizedFeaturedImageUrl = imageUrlValidation.url;
   }
 
   const rawAuthorName = typeof input.author_name === 'string' ? input.author_name.trim() : '';
@@ -683,6 +919,27 @@ function validateAndNormalizeWriteInput(
   const id = input.id ? String(input.id).trim() : null;
   const group_id = input.group_id ? String(input.group_id).trim() : null;
 
+  const editorialDateResolution = resolveEditorialUpdateTimestamp({
+    mode: input.update_date_mode,
+    customUpdatedAt: input.custom_updated_at,
+    firstPublishedAt:
+      options?.existingFirstPublishedAt !== undefined
+        ? options.existingFirstPublishedAt
+        : input.first_published_at,
+    publishedAt:
+      options?.existingPublishedAt !== undefined
+        ? options.existingPublishedAt
+        : input.published_at,
+    nowDate: options?.nowDate,
+  });
+
+  if (!editorialDateResolution.ok) {
+    return {
+      ok: false,
+      message: editorialDateResolution.message,
+    };
+  }
+
   return {
     ok: true,
     normalized: {
@@ -695,12 +952,89 @@ function validateAndNormalizeWriteInput(
       content,
       seo_title,
       meta_description,
-      featured_image_url: rawImageUrl ? rawImageUrl : null,
+      featured_image_url: normalizedFeaturedImageUrl,
       featured_image_alt: rawImageAlt ? rawImageAlt : null,
       author_name: rawAuthorName ? rawAuthorName : null,
       faqs: normalizedFaqs,
       status,
+      update_date_mode: editorialDateResolution.mode,
+      should_send_updated_at: editorialDateResolution.shouldSendUpdatedAt,
+      resolved_updated_at: editorialDateResolution.updatedAt,
     },
+  };
+}
+
+/**
+ * Builds the exact database write payload for `public.blog_posts`:
+ * - Never includes `first_published_at` or `published_at`.
+ * - For `UPDATE` with `update_date_mode = 'keep'`, omits `updated_at` so `handle_blog_posts_lifecycle()` preserves `OLD.updated_at`.
+ * - For `UPDATE` with `update_date_mode = 'now'` or `'custom'`, includes `updated_at` with the resolved UTC ISO timestamp.
+ */
+export function buildBlogPostWritePayload(
+  input: BlogPostWriteInput,
+  options?: {
+    existingFirstPublishedAt?: string | null;
+    existingPublishedAt?: string | null;
+    nowDate?: Date;
+  }
+):
+  | {
+      ok: true;
+      isUpdate: boolean;
+      id: string | null;
+      group_id: string | null;
+      payload: Record<string, unknown>;
+      normalized: Extract<
+        ReturnType<typeof validateAndNormalizeWriteInput>,
+        { ok: true }
+      >['normalized'];
+    }
+  | { ok: false; message: string } {
+  const validation = validateAndNormalizeWriteInput(input, options);
+  if (!validation.ok) {
+    return validation;
+  }
+
+  const { normalized } = validation;
+  const payload: Record<string, unknown> = {
+    language: normalized.language,
+    title: normalized.title,
+    slug: normalized.slug,
+    excerpt: normalized.excerpt,
+    content: normalized.content,
+    seo_title: normalized.seo_title,
+    meta_description: normalized.meta_description,
+    featured_image_url: normalized.featured_image_url,
+    featured_image_alt: normalized.featured_image_alt,
+    author_name: normalized.author_name,
+    faqs: normalized.faqs,
+    status: normalized.status,
+  };
+
+  if (normalized.id) {
+    if (normalized.group_id) {
+      payload.group_id = normalized.group_id;
+    }
+    if (normalized.should_send_updated_at && normalized.resolved_updated_at) {
+      payload.updated_at = normalized.resolved_updated_at;
+    }
+    return {
+      ok: true,
+      isUpdate: true,
+      id: normalized.id,
+      group_id: normalized.group_id,
+      payload,
+      normalized,
+    };
+  }
+
+  return {
+    ok: true,
+    isUpdate: false,
+    id: null,
+    group_id: normalized.group_id,
+    payload,
+    normalized,
   };
 }
 
@@ -777,10 +1111,19 @@ export async function fetchAdminBlogPosts(): Promise<AdminBlogFetchResult> {
   }
 
   try {
-    const { data, error } = await client
+    let { data, error } = await client
       .from('blog_posts')
       .select(BLOG_POST_SELECT_COLUMNS)
       .order('updated_at', { ascending: false });
+
+    if (error && error.code === '42703') {
+      const legacyResult = await client
+        .from('blog_posts')
+        .select(BLOG_POST_SELECT_COLUMNS_LEGACY)
+        .order('updated_at', { ascending: false });
+      data = legacyResult.data as typeof data;
+      error = legacyResult.error;
+    }
 
     if (error) {
       const formatted = formatDatabaseCrudError(error);
@@ -807,8 +1150,9 @@ export async function fetchAdminBlogPosts(): Promise<AdminBlogFetchResult> {
  *   up the newly created empty group row so no orphan group remains.
  * - For an existing post (`input.id`): updates the existing row in `public.blog_posts` while
  *   preserving its `id` and `group_id`.
- * - Never sends `published_at` from the client; the database lifecycle trigger
- *   `handle_blog_posts_lifecycle()` manages `published_at` automatically.
+ * - Never sends `first_published_at` or `published_at` from the client; the database lifecycle
+ *   trigger `handle_blog_posts_lifecycle()` manages publication timestamps automatically.
+ * - In `keep` mode (default), omits `updated_at` so the database trigger preserves `OLD.updated_at`.
  */
 export async function saveAdminBlogPost(
   input: BlogPostWriteInput
@@ -821,11 +1165,11 @@ export async function saveAdminBlogPost(
     };
   }
 
-  const validation = validateAndNormalizeWriteInput(input);
-  if (!validation.ok) {
+  const initialValidation = buildBlogPostWritePayload(input);
+  if (!initialValidation.ok) {
     return {
       status: 'validation_error',
-      message: validation.message,
+      message: initialValidation.message,
     };
   }
 
@@ -837,39 +1181,61 @@ export async function saveAdminBlogPost(
     return { status: 'error', message: sessionCheck.message };
   }
 
-  const { normalized } = validation;
-
-  const writeColumns = {
-    language: normalized.language,
-    title: normalized.title,
-    slug: normalized.slug,
-    excerpt: normalized.excerpt,
-    content: normalized.content,
-    seo_title: normalized.seo_title,
-    meta_description: normalized.meta_description,
-    featured_image_url: normalized.featured_image_url,
-    featured_image_alt: normalized.featured_image_alt,
-    author_name: normalized.author_name,
-    faqs: normalized.faqs,
-    status: normalized.status,
-  };
-
   try {
     // Update existing post (preserve id and existing group_id; never create a new group)
-    if (normalized.id) {
-      const updatePayload: Record<string, unknown> = {
-        ...writeColumns,
-      };
-      if (normalized.group_id) {
-        updatePayload.group_id = normalized.group_id;
+    if (initialValidation.isUpdate && initialValidation.id) {
+      let existingFirstPublishedAt = input.first_published_at;
+      let existingPublishedAt = input.published_at;
+
+      if (
+        initialValidation.normalized.update_date_mode === 'custom' &&
+        !existingFirstPublishedAt &&
+        !existingPublishedAt
+      ) {
+        const { data: existingRow } = await client
+          .from('blog_posts')
+          .select('first_published_at, published_at')
+          .eq('id', initialValidation.id)
+          .maybeSingle();
+
+        if (existingRow) {
+          existingFirstPublishedAt =
+            (existingRow as { first_published_at?: string | null }).first_published_at ?? null;
+          existingPublishedAt =
+            (existingRow as { published_at?: string | null }).published_at ?? null;
+        }
       }
 
-      const { data: updatedPost, error: updateError } = await client
+      const verifiedBuild = buildBlogPostWritePayload(input, {
+        existingFirstPublishedAt,
+        existingPublishedAt,
+      });
+      if (!verifiedBuild.ok) {
+        return {
+          status: 'validation_error',
+          message: verifiedBuild.message,
+        };
+      }
+
+      const updatePayload = verifiedBuild.payload;
+
+      let { data: updatedPost, error: updateError } = await client
         .from('blog_posts')
         .update(updatePayload)
-        .eq('id', normalized.id)
+        .eq('id', verifiedBuild.id!)
         .select(BLOG_POST_SELECT_COLUMNS)
         .single();
+
+      if (updateError && updateError.code === '42703') {
+        const legacyUpdate = await client
+          .from('blog_posts')
+          .update(updatePayload)
+          .eq('id', verifiedBuild.id!)
+          .select(BLOG_POST_SELECT_COLUMNS_LEGACY)
+          .single();
+        updatedPost = legacyUpdate.data as typeof updatedPost;
+        updateError = legacyUpdate.error;
+      }
 
       if (updateError) {
         const formatted = formatDatabaseCrudError(updateError);
@@ -898,7 +1264,7 @@ export async function saveAdminBlogPost(
     }
 
     // Create new post: 1. Create required group row in public.blog_post_groups unless a group_id was explicitly provided
-    let targetGroupId = normalized.group_id;
+    let targetGroupId = initialValidation.group_id;
     let createdNewGroupId: string | null = null;
 
     if (!targetGroupId) {
@@ -922,15 +1288,27 @@ export async function saveAdminBlogPost(
       createdNewGroupId = groupData.id;
     }
 
-    // 2. Insert post row in public.blog_posts with group_id
-    const { data: insertedPost, error: insertError } = await client
+    // 2. Insert post row in public.blog_posts with group_id (never send first_published_at, published_at, or updated_at)
+    const insertPayload: Record<string, unknown> = {
+      ...initialValidation.payload,
+      group_id: targetGroupId,
+    };
+
+    let { data: insertedPost, error: insertError } = await client
       .from('blog_posts')
-      .insert({
-        ...writeColumns,
-        group_id: targetGroupId,
-      })
+      .insert(insertPayload)
       .select(BLOG_POST_SELECT_COLUMNS)
       .single();
+
+    if (insertError && insertError.code === '42703') {
+      const legacyInsert = await client
+        .from('blog_posts')
+        .insert(insertPayload)
+        .select(BLOG_POST_SELECT_COLUMNS_LEGACY)
+        .single();
+      insertedPost = legacyInsert.data as typeof insertedPost;
+      insertError = legacyInsert.error;
+    }
 
     if (insertError || !insertedPost) {
       // Clean up the newly created empty group row so failed inserts do not leave orphan groups
@@ -1047,12 +1425,216 @@ export async function deleteAdminBlogPost(
 }
 
 const BLOG_IMAGES_BUCKET = 'blog-images';
+const BRANDED_IMAGE_SITE_ORIGIN = 'https://suweldotools.com';
 const MAX_IMAGE_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_IMAGE_MIME_TYPES: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
   'image/webp': 'webp',
 };
+const EXTENSION_TO_MIME: Record<string, string> = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+};
+
+const BARE_UUID_PATH_REGEX =
+  /(?:^|\/)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/?$/i;
+const SUPABASE_FEATURED_PATH_REGEX =
+  /^(?:https?:\/\/[^/]+)?\/?(?:storage\/v1\/object\/public\/[^/]+\/)?featured\/(\d{4})[-/](\d{2})\/([a-zA-Z0-9][a-zA-Z0-9._-]{0,199}\.(?:webp|png|jpe?g))$/i;
+const BRANDED_IMAGES_PATH_REGEX =
+  /^(?:https?:\/\/(?:www\.)?suweldotools\.com)?\/images\/(\d{4})\/(\d{2})\/([a-zA-Z0-9][a-zA-Z0-9._-]{0,199}\.(?:webp|png|jpe?g))$/i;
+
+function isValidImageYearMonth(year: string, month: string): boolean {
+  if (!/^\d{4}$/.test(year) || !/^(0[1-9]|1[0-2])$/.test(month)) {
+    return false;
+  }
+  const y = Number(year);
+  return y >= 2000 && y <= 2100;
+}
+
+/**
+ * Converts a Supabase Storage object path (`featured/YYYY-MM/filename.ext`)
+ * into a canonical branded SuweldoTools URL (`https://suweldotools.com/images/YYYY/MM/filename.ext`).
+ */
+export function buildBrandedBlogImageUrl(objectPath: string): string | null {
+  if (!objectPath || typeof objectPath !== 'string') return null;
+  const trimmed = objectPath.trim().replace(/^\/+/, '');
+  if (trimmed.includes('..') || trimmed.includes('\\')) return null;
+
+  const match = /^featured\/(\d{4})[-/](\d{2})\/([a-zA-Z0-9][a-zA-Z0-9._-]{0,199}\.(?:webp|png|jpe?g))$/i.exec(
+    trimmed
+  );
+  if (!match) return null;
+
+  const [, year, month, filename] = match;
+  if (!isValidImageYearMonth(year, month) || filename.includes('..')) {
+    return null;
+  }
+
+  return `${BRANDED_IMAGE_SITE_ORIGIN}/images/${year}/${month}/${filename}`;
+}
+
+/**
+ * Validates and normalizes a Featured Image URL for blog posts:
+ * - Rejects `blob:`, `data:`, `javascript:`, protocol-relative `//`, backslashes, and stripped blob UUID remnants.
+ * - Normalizes Supabase `/featured/YYYY-MM/filename.ext` and `/images/YYYY/MM/filename.ext` to `https://suweldotools.com/images/YYYY/MM/filename.ext`.
+ * - Preserves other valid HTTP(S) or root-relative image URLs.
+ */
+export function validateAndNormalizeFeaturedImageUrl(
+  rawUrl: string | null | undefined
+): { ok: true; url: string | null } | { ok: false; message: string } {
+  if (rawUrl === null || rawUrl === undefined) {
+    return { ok: true, url: null };
+  }
+  const trimmed = String(rawUrl).trim();
+  if (!trimmed) {
+    return { ok: true, url: null };
+  }
+
+  const lower = trimmed.toLowerCase();
+  if (lower.startsWith('blob:')) {
+    return {
+      ok: false,
+      message:
+        'Browser blob: URLs are temporary local previews and cannot be saved. Please upload the image file to Supabase Storage.',
+    };
+  }
+  if (lower.startsWith('data:')) {
+    return {
+      ok: false,
+      message:
+        'Inline data: URLs are not supported for featured images. Please upload an image file or provide an HTTPS image URL.',
+    };
+  }
+  if (
+    trimmed.includes('\\') ||
+    /%2e/i.test(trimmed) ||
+    /%2f/i.test(trimmed) ||
+    /%5c/i.test(trimmed) ||
+    /%00/i.test(trimmed) ||
+    /[\x00-\x1f\x7f]/.test(trimmed) ||
+    trimmed.includes('..')
+  ) {
+    return {
+      ok: false,
+      message: 'Featured Image URL contains invalid or unsafe path characters.',
+    };
+  }
+  if (trimmed.startsWith('//')) {
+    return {
+      ok: false,
+      message: 'Featured Image URL must start with https://, http://, or a single /.',
+    };
+  }
+
+  // Reject stripped blob UUID remnants (e.g., https://ais-dev-...run.app/a35f1aec-91d4-45ab-b71a-90b1c24701f6)
+  const pathWithoutQuery = trimmed.split(/[?#]/)[0];
+  if (BARE_UUID_PATH_REGEX.test(pathWithoutQuery)) {
+    return {
+      ok: false,
+      message:
+        'Featured Image URL appears to be a temporary browser preview UUID rather than a stored image. Please upload the image file first.',
+    };
+  }
+
+  // Normalize Supabase featured storage URLs -> branded https://suweldotools.com/images/YYYY/MM/filename.ext
+  const supabaseMatch = SUPABASE_FEATURED_PATH_REGEX.exec(trimmed);
+  if (supabaseMatch) {
+    const [, year, month, filename] = supabaseMatch;
+    if (!isValidImageYearMonth(year, month)) {
+      return {
+        ok: false,
+        message: 'Featured Image URL has an invalid year or month segment.',
+      };
+    }
+    return {
+      ok: true,
+      url: `${BRANDED_IMAGE_SITE_ORIGIN}/images/${year}/${month}/${filename}`,
+    };
+  }
+
+  // Validate any URL targeting /images/... on suweldotools.com or root-relative /images/...
+  if (
+    trimmed.startsWith('/images/') ||
+    trimmed === '/images' ||
+    /^https?:\/\/(?:www\.)?suweldotools\.com\/images(?:\/|$)/i.test(trimmed)
+  ) {
+    const brandedMatch = BRANDED_IMAGES_PATH_REGEX.exec(trimmed);
+    if (!brandedMatch) {
+      return {
+        ok: false,
+        message:
+          'Branded image URLs under /images/ must follow https://suweldotools.com/images/YYYY/MM/filename.(webp|png|jpg|jpeg).',
+      };
+    }
+    const [, year, month, filename] = brandedMatch;
+    if (!isValidImageYearMonth(year, month)) {
+      return {
+        ok: false,
+        message:
+          'Branded image URLs under /images/ must have a valid 4-digit year (2000-2100) and 2-digit month (01-12).',
+      };
+    }
+    return {
+      ok: true,
+      url: `${BRANDED_IMAGE_SITE_ORIGIN}/images/${year}/${month}/${filename}`,
+    };
+  }
+
+  // Root-relative path
+  if (trimmed.startsWith('/')) {
+    if (trimmed.includes('//')) {
+      return {
+        ok: false,
+        message: 'Featured Image URL contains invalid duplicate slashes.',
+      };
+    }
+    return { ok: true, url: trimmed };
+  }
+
+  // Full HTTP(S) URL
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+      return {
+        ok: false,
+        message: 'Featured Image URL must start with https://, http://, or /.',
+      };
+    }
+    if (BARE_UUID_PATH_REGEX.test(parsed.pathname)) {
+      return {
+        ok: false,
+        message:
+          'Featured Image URL appears to be a temporary browser preview UUID rather than a stored image. Please upload the image file first.',
+      };
+    }
+    // Reject preview container host URLs unless they map to a valid /images/YYYY/MM/filename.ext path
+    if (/\.run\.app$/i.test(parsed.hostname) || parsed.hostname === 'localhost') {
+      const localBrandedMatch = /^\/images\/(\d{4})\/(\d{2})\/([a-zA-Z0-9][a-zA-Z0-9._-]{0,199}\.(?:webp|png|jpe?g))$/i.exec(
+        parsed.pathname
+      );
+      if (localBrandedMatch && isValidImageYearMonth(localBrandedMatch[1], localBrandedMatch[2])) {
+        return {
+          ok: true,
+          url: `${BRANDED_IMAGE_SITE_ORIGIN}/images/${localBrandedMatch[1]}/${localBrandedMatch[2]}/${localBrandedMatch[3]}`,
+        };
+      }
+      return {
+        ok: false,
+        message:
+          'Temporary preview environment URLs cannot be used as permanent Featured Image URLs. Please upload the image to Supabase Storage.',
+      };
+    }
+    return { ok: true, url: parsed.toString() };
+  } catch {
+    return {
+      ok: false,
+      message: 'Featured Image URL must be a valid https://, http://, or root-relative URL.',
+    };
+  }
+}
 
 function generateRandomHex(byteLength = 4): string {
   try {
@@ -1069,7 +1651,7 @@ function generateRandomHex(byteLength = 4): string {
   return Math.random().toString(16).slice(2, 2 + byteLength * 2).padEnd(byteLength * 2, '0');
 }
 
-function sanitizeImageBaseName(rawName: string): string {
+export function sanitizeImageBaseName(rawName: string): string {
   const withoutExt = String(rawName || '').replace(/\.[^/.]+$/, '');
   const cleaned = withoutExt
     .toLowerCase()
@@ -1078,8 +1660,24 @@ function sanitizeImageBaseName(rawName: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
-    .slice(0, 40);
+    .slice(0, 60)
+    .replace(/-+$/g, '');
   return cleaned || 'featured-image';
+}
+
+function isDuplicateStorageObjectError(error: {
+  message?: string;
+  statusCode?: string | number;
+  error?: string;
+}): boolean {
+  const rawMsg = `${error.message || ''} ${error.error || ''}`.toLowerCase();
+  const statusStr = String(error.statusCode || '');
+  return (
+    statusStr === '409' ||
+    rawMsg.includes('already exists') ||
+    rawMsg.includes('duplicate') ||
+    rawMsg.includes('resource already exists')
+  );
 }
 
 function formatStorageUploadError(error: {
@@ -1115,7 +1713,7 @@ function formatStorageUploadError(error: {
   if (lower.includes('mime type') || lower.includes('invalid_mime_type') || statusStr === '415') {
     return 'Unsupported image format rejected by Storage. Please upload a JPEG, PNG, or WebP image.';
   }
-  if (lower.includes('already exists') || lower.includes('duplicate') || statusStr === '409') {
+  if (isDuplicateStorageObjectError(error)) {
     return 'An image with this storage object path already exists. Please try uploading again.';
   }
   if (
@@ -1129,14 +1727,33 @@ function formatStorageUploadError(error: {
   return `Supabase Storage upload failed: ${rawMsg}`;
 }
 
+export interface UploadAdminBlogImageDependencies {
+  client?: SupabaseClient | null;
+  verifySession?: (
+    client: SupabaseClient
+  ) => Promise<
+    | { status: 'authorized'; userId: string }
+    | { status: 'unauthorized'; message: string }
+    | { status: 'error'; message: string }
+  >;
+  now?: Date;
+  randomHexGenerator?: (byteLength?: number) => string;
+}
+
 /**
  * Uploads a Featured Image (JPEG, PNG, or WebP up to 5 MB) to the public `blog-images`
- * Supabase Storage bucket under `featured/YYYY-MM/<timestamp>-<random>-<filename>.<ext>`
- * using `upsert: false`, and returns the resulting public URL.
+ * Supabase Storage bucket under `featured/YYYY-MM/<filename>.<ext>` using `upsert: false`.
+ * - Uses a clean sanitized filename on the first attempt (`featured/YYYY-MM/take-home-pay.webp`).
+ * - If a duplicate filename collision occurs (`409`), automatically retries with a unique random hex suffix
+ *   (`featured/YYYY-MM/take-home-pay-a1b2c3d4.webp`) without overwriting the existing file.
+ * - Returns the branded SuweldoTools URL: `https://suweldotools.com/images/YYYY/MM/<filename>.<ext>`.
  * - Re-verifies the active authenticated session and `public.blog_admins` membership before upload.
  */
-export async function uploadAdminBlogImage(file: File): Promise<AdminBlogImageUploadResult> {
-  if (!file || typeof file.size !== 'number' || typeof file.type !== 'string') {
+export async function uploadAdminBlogImage(
+  file: File,
+  deps?: UploadAdminBlogImageDependencies
+): Promise<AdminBlogImageUploadResult> {
+  if (!file || typeof file.size !== 'number') {
     const message = 'Please select a valid JPEG, PNG, or WebP image file to upload.';
     return {
       status: 'validation_error',
@@ -1146,8 +1763,40 @@ export async function uploadAdminBlogImage(file: File): Promise<AdminBlogImageUp
     };
   }
 
-  const ext = ALLOWED_IMAGE_MIME_TYPES[file.type.toLowerCase()];
-  if (!ext) {
+  const rawMime = typeof file.type === 'string' ? file.type.trim().toLowerCase() : '';
+  const nameExtMatch = /\.([a-z0-9]+)$/i.exec(String(file.name || '').trim());
+  const rawNameExt = nameExtMatch ? nameExtMatch[1].toLowerCase() : '';
+
+  let ext = ALLOWED_IMAGE_MIME_TYPES[rawMime] || '';
+  let resolvedContentType = rawMime;
+
+  if (!ext && !rawMime && rawNameExt && EXTENSION_TO_MIME[rawNameExt]) {
+    resolvedContentType = EXTENSION_TO_MIME[rawNameExt];
+    ext = ALLOWED_IMAGE_MIME_TYPES[resolvedContentType];
+  } else if (ext && rawNameExt && EXTENSION_TO_MIME[rawNameExt]) {
+    // Ensure extension and MIME type agree
+    if (EXTENSION_TO_MIME[rawNameExt] !== resolvedContentType) {
+      const message =
+        'File extension does not match its image MIME type. Please upload a valid JPEG (.jpg), PNG (.png), or WebP (.webp) file.';
+      return {
+        status: 'validation_error',
+        ok: false,
+        message,
+        error: message,
+      };
+    }
+  } else if (ext && rawNameExt && !EXTENSION_TO_MIME[rawNameExt]) {
+    const message =
+      'Invalid file extension. Only JPEG (.jpg/.jpeg), PNG (.png), and WebP (.webp) images are supported.';
+    return {
+      status: 'validation_error',
+      ok: false,
+      message,
+      error: message,
+    };
+  }
+
+  if (!ext || !resolvedContentType) {
     const message =
       'Invalid file format. Only JPEG (.jpg), PNG (.png), and WebP (.webp) images are supported.';
     return {
@@ -1179,7 +1828,7 @@ export async function uploadAdminBlogImage(file: File): Promise<AdminBlogImageUp
     };
   }
 
-  const client = getSupabaseClient();
+  const client = deps && 'client' in deps ? deps.client : getSupabaseClient();
   if (!client) {
     const message = 'Supabase client is not configured.';
     return {
@@ -1190,7 +1839,8 @@ export async function uploadAdminBlogImage(file: File): Promise<AdminBlogImageUp
     };
   }
 
-  const sessionCheck = await requireAuthorizedAdminSession(client);
+  const verifyFn = deps?.verifySession || requireAuthorizedAdminSession;
+  const sessionCheck = await verifyFn(client);
   if (sessionCheck.status === 'unauthorized') {
     return {
       status: 'unauthorized',
@@ -1208,53 +1858,82 @@ export async function uploadAdminBlogImage(file: File): Promise<AdminBlogImageUp
     };
   }
 
-  const now = new Date();
-  const yearMonth = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
-  const randomHex = generateRandomHex(4);
+  const now = deps?.now || new Date();
+  const year = String(now.getUTCFullYear());
+  const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+  const yearMonth = `${year}-${month}`;
   const safeBaseName = sanitizeImageBaseName(file.name);
-  const objectPath = `featured/${yearMonth}/${now.getTime()}-${randomHex}-${safeBaseName}.${ext}`;
+  const hexGen = deps?.randomHexGenerator || generateRandomHex;
+
+  const MAX_UPLOAD_ATTEMPTS = 4;
+  let lastUploadError: { message?: string; statusCode?: string | number; error?: string } | null =
+    null;
 
   try {
-    const { data: uploadData, error: uploadError } = await client.storage
-      .from(BLOG_IMAGES_BUCKET)
-      .upload(objectPath, file, {
-        cacheControl: '31536000',
-        upsert: false,
-        contentType: file.type.toLowerCase(),
-      });
+    for (let attempt = 0; attempt < MAX_UPLOAD_ATTEMPTS; attempt++) {
+      const candidateFileName =
+        attempt === 0
+          ? `${safeBaseName}.${ext}`
+          : `${safeBaseName}-${hexGen(4)}.${ext}`;
+      const candidateObjectPath = `featured/${yearMonth}/${candidateFileName}`;
 
-    if (uploadError) {
-      const message = formatStorageUploadError(uploadError);
+      const { data: uploadData, error: uploadError } = await client.storage
+        .from(BLOG_IMAGES_BUCKET)
+        .upload(candidateObjectPath, file, {
+          cacheControl: '31536000',
+          upsert: false,
+          contentType: resolvedContentType,
+        });
+
+      if (uploadError) {
+        lastUploadError = uploadError;
+        if (isDuplicateStorageObjectError(uploadError) && attempt < MAX_UPLOAD_ATTEMPTS - 1) {
+          continue;
+        }
+        const message = formatStorageUploadError(uploadError);
+        return {
+          status: 'error',
+          ok: false,
+          message,
+          error: message,
+        };
+      }
+
+      const finalPath = uploadData?.path || candidateObjectPath;
+      const brandedUrl = buildBrandedBlogImageUrl(finalPath);
+      if (!brandedUrl) {
+        const message =
+          'Image uploaded, but could not construct a valid branded image URL from storage path.';
+        return {
+          status: 'error',
+          ok: false,
+          message,
+          error: message,
+        };
+      }
+
+      const { data: publicUrlData } = client.storage
+        .from(BLOG_IMAGES_BUCKET)
+        .getPublicUrl(finalPath);
+      const storagePublicUrl = publicUrlData?.publicUrl ? publicUrlData.publicUrl.trim() : undefined;
+
       return {
-        status: 'error',
-        ok: false,
-        message,
-        error: message,
+        status: 'ok',
+        ok: true,
+        publicUrl: brandedUrl,
+        storagePublicUrl,
+        objectPath: finalPath,
       };
     }
 
-    const finalPath = uploadData?.path || objectPath;
-    const { data: publicUrlData } = client.storage
-      .from(BLOG_IMAGES_BUCKET)
-      .getPublicUrl(finalPath);
-
-    const publicUrl = publicUrlData?.publicUrl ? publicUrlData.publicUrl.trim() : '';
-    if (!publicUrl || (!publicUrl.startsWith('https://') && !publicUrl.startsWith('http://'))) {
-      const message =
-        'Image uploaded, but Supabase Storage did not return a valid public URL.';
-      return {
-        status: 'error',
-        ok: false,
-        message,
-        error: message,
-      };
-    }
-
+    const message = formatStorageUploadError(
+      lastUploadError || { message: 'Could not allocate a unique filename in Supabase Storage.' }
+    );
     return {
-      status: 'ok',
-      ok: true,
-      publicUrl,
-      objectPath: finalPath,
+      status: 'error',
+      ok: false,
+      message,
+      error: message,
     };
   } catch (err: unknown) {
     const message =
@@ -1309,33 +1988,6 @@ export function isSafeAnnouncementUrl(rawUrl: string | null | undefined): boolea
 
 const ANNOUNCEMENT_SELECT_COLUMNS =
   'slot, is_active, title_en, title_tl, body_en, body_tl, image_url, image_alt_en, image_alt_tl, link_url, link_label_en, link_label_tl, display_style, draft_lock_token, updated_at, published_at, updated_by';
-
-/**
- * Public helper to fetch the active published announcement for site visitors.
- */
-export async function fetchPublicAnnouncement(): Promise<SiteAnnouncementRecord | null> {
-  const client = getSupabaseClient();
-  if (!client) {
-    return null;
-  }
-
-  try {
-    const { data, error } = await client
-      .from('site_announcements')
-      .select(ANNOUNCEMENT_SELECT_COLUMNS)
-      .eq('slot', 'published')
-      .eq('is_active', true)
-      .maybeSingle();
-
-    if (error || !data) {
-      return null;
-    }
-
-    return data as SiteAnnouncementRecord;
-  } catch {
-    return null;
-  }
-}
 
 function generateClientUuid(): string {
   try {

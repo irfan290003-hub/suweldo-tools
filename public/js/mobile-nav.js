@@ -15,6 +15,27 @@
   var CALC_HANDOFF_KEY = 'suweldotools_calc_handoff';
   var BANNER_DISMISSED_KEY = 'suweldotools_lang_banner_dismissed';
 
+  var KNOWN_ROUTES = [
+    '/',
+    '/calculators/',
+    '/take-home-pay-calculator-philippines/',
+    '/13th-month-pay-calculator/',
+    '/sss-contribution-table-2026/',
+    '/philhealth-contribution-calculator/',
+    '/overtime-holiday-pay-calculator-philippines/',
+    '/pagibig-mp2-savings-estimator/',
+    '/final-pay-calculator-philippines/',
+    '/blog/',
+    '/about/',
+    '/contact/',
+    '/privacy-policy/',
+    '/disclaimer/',
+    '/sources/',
+    '/editorial-policy/',
+    '/corrections-policy/',
+    '/authors/mohammad-irfan/'
+  ];
+
   function safeGetStorage(storage, key) {
     try {
       return storage.getItem(key);
@@ -49,6 +70,46 @@
     return p;
   }
 
+  function isKnownEnRoute(enPath) {
+    if (KNOWN_ROUTES.indexOf(enPath) !== -1) return true;
+    return false;
+  }
+
+  function isBlogArticleRoute(enPath) {
+    return enPath.indexOf('/blog/') === 0 && enPath !== '/blog/';
+  }
+
+  function readAuthoritativeLangHref(lang) {
+    if (typeof document === 'undefined' || !document) return null;
+    if (typeof document.querySelector === 'function') {
+      var direct =
+        document.querySelector('a[data-lang-switch="' + lang + '"]') ||
+        document.querySelector('[data-lang-switch="' + lang + '"]');
+      if (direct && typeof direct.getAttribute === 'function') {
+        var directHref = (direct.getAttribute('href') || '').trim();
+        if (directHref) {
+          var cleanDirect = directHref.split(/[?#]/)[0];
+          if (cleanDirect) return normalizePath(cleanDirect);
+        }
+      }
+    }
+    if (typeof document.querySelectorAll === 'function') {
+      var links = document.querySelectorAll('[data-lang-switch]');
+      for (var i = 0; i < links.length; i++) {
+        var link = links[i];
+        if (!link || typeof link.getAttribute !== 'function') continue;
+        if (link.getAttribute('data-lang-switch') === lang) {
+          var rawHref = (link.getAttribute('href') || '').trim();
+          if (rawHref) {
+            var cleanHref = rawHref.split(/[?#]/)[0];
+            if (cleanHref) return normalizePath(cleanHref);
+          }
+        }
+      }
+    }
+    return null;
+  }
+
   function getRoutePair(pathname) {
     var norm = normalizePath(pathname);
     var isTl = norm === '/tl/' || norm.indexOf('/tl/') === 0;
@@ -58,6 +119,19 @@
     }
     if (!enPath.endsWith('/')) {
       enPath = enPath + '/';
+    }
+    if (isBlogArticleRoute(enPath)) {
+      var authoritativeEn = readAuthoritativeLangHref('en');
+      var authoritativeTl = readAuthoritativeLangHref('tl');
+      return {
+        isTl: isTl,
+        currentLang: isTl ? 'tl' : 'en',
+        enPath: authoritativeEn || '/blog/',
+        tlPath: authoritativeTl || '/tl/blog/'
+      };
+    }
+    if (!isKnownEnRoute(enPath)) {
+      enPath = '/';
     }
     var tlPath = enPath === '/' ? '/tl/' : '/tl' + enPath;
     return {
@@ -173,6 +247,98 @@
           nightOvertimeHours: otNsdOtHrs ? otNsdOtHrs.value : '0'
         };
       }
+
+      // 6. Pag-IBIG & MP2 Savings Estimator
+      var piSalary = document.getElementById('piBasicSalary');
+      if (piSalary) {
+        var piEeRate = document.getElementById('piEmployeeRateMode');
+        var piErRate = document.getElementById('piEmployerRateMode');
+        var piCutoffBtn = document.getElementById('piFreqCutoffBtn');
+        var isPiCutoff = piCutoffBtn && piCutoffBtn.getAttribute('aria-pressed') === 'true';
+        var mp2Init = document.getElementById('mp2InitialDeposit');
+        var mp2Contrib = document.getElementById('mp2ContributionAmount');
+        var mp2Years = document.getElementById('mp2Years');
+        var mp2Rate = document.getElementById('mp2DividendRate');
+        var mp2AnnualBtn = document.getElementById('mp2FreqAnnualBtn');
+        var isMp2Annual = mp2AnnualBtn && mp2AnnualBtn.getAttribute('aria-pressed') === 'true';
+        var mp2PayoutBtn = document.getElementById('mp2TreatmentPayoutBtn');
+        var isMp2Payout = mp2PayoutBtn && mp2PayoutBtn.getAttribute('aria-pressed') === 'true';
+        return {
+          calculator: 'pagibig-mp2',
+          calculatorType: 'pagibig-mp2',
+          timestamp: Date.now(),
+          data: {
+            piBasicSalary: piSalary.value,
+            piEmployeeRateMode: piEeRate ? piEeRate.value : 'auto',
+            piEmployerRateMode: piErRate ? piErRate.value : '2%',
+            regFreq: isPiCutoff ? 'cutoff' : 'monthly',
+            mp2InitialDeposit: mp2Init ? mp2Init.value : '0',
+            mp2ContributionAmount: mp2Contrib ? mp2Contrib.value : '1000',
+            mp2Years: mp2Years ? mp2Years.value : '5',
+            mp2DividendRate: mp2Rate ? mp2Rate.value : '7.0',
+            mp2Frequency: isMp2Annual ? 'annual' : 'monthly',
+            mp2Treatment: isMp2Payout ? 'payout' : 'compounded'
+          }
+        };
+      }
+
+      // 7. Final Pay Calculator
+      var fpForm = document.getElementById('finalPayForm');
+      if (fpForm) {
+        var fpFieldIds = [
+          'fpSeparationCause',
+          'fpEmployeeRole',
+          'fpServiceYears',
+          'fpServiceMonths',
+          'fpCustomSeparationPay',
+          'fpMonthlySalary',
+          'fpDivisor',
+          'fpIsCustomDailyRate',
+          'fpCustomDailyRate',
+          'fpDaysWorked',
+          'fpTardiness',
+          'fpYtdBasicSalary',
+          'fpPrior13thAdvances',
+          'fpPriorTaxableBonuses',
+          'fpLeavePolicy',
+          'fpAnnualVL',
+          'fpUnusedSIL',
+          'fpMonetizeSIL',
+          'fpUnusedVL',
+          'fpMonetizeVL',
+          'fpUnusedSL',
+          'fpMonetizeSL',
+          'fpOtherTaxable',
+          'fpOtherNonTaxable',
+          'fpTaxRefund',
+          'fpDedTaxDeficit',
+          'fpDedSSS',
+          'fpDedPhilHealth',
+          'fpDedPagIbig',
+          'fpDedLoans',
+          'fpDedOther',
+          'fpClaimEquipment',
+          'fpClaimBadge',
+          'fpClaimDisputed',
+          'fpClaimOther'
+        ];
+        var fpData = {};
+        for (var f = 0; f < fpFieldIds.length; f++) {
+          var fid = fpFieldIds[f];
+          var fel = document.getElementById(fid);
+          if (!fel) continue;
+          if (fel.type === 'checkbox') {
+            fpData[fid] = Boolean(fel.checked);
+          } else {
+            fpData[fid] = fel.value;
+          }
+        }
+        return {
+          calculator: 'final-pay',
+          timestamp: Date.now(),
+          data: fpData
+        };
+      }
     } catch (e) {
       return null;
     }
@@ -226,8 +392,8 @@
     var savedLang = safeGetStorage(window.localStorage, LANG_STORAGE_KEY);
     var searchAndHash = (window.location.search || '') + (window.location.hash || '');
 
-    // Default to EN highlighted on both English and Filipino pages unless explicitly selected
-    if (explicitLang === 'tl') {
+    // Highlight the active language based on the current page route
+    if (routeInfo.isTl) {
       updateDesktopSwitcherState('tl');
     } else {
       updateDesktopSwitcherState('en');
@@ -556,7 +722,44 @@
       }
     });
 
-    // Both English and Filipino use the compact drawer menu across all screen widths.
+    // Close mobile drawer and restore body scrolling if viewport crosses to desktop (1024px+)
+    function closeOnDesktopViewport() {
+      var isDesktop = window.matchMedia
+        ? window.matchMedia('(min-width: 1024px)').matches
+        : window.innerWidth >= 1024;
+      if (isDesktop && (isMenuOpen() || isScrollLocked)) {
+        if (closeTransitionTimeout) {
+          clearTimeout(closeTransitionTimeout);
+          closeTransitionTimeout = null;
+        }
+        toggleBtn.setAttribute('aria-expanded', 'false');
+        toggleBtn.setAttribute(
+          'aria-label',
+          isTl ? 'Buksan ang menu ng nabigasyon' : 'Open navigation menu'
+        );
+        if (openIcon) openIcon.classList.remove('hidden');
+        if (closeIcon) closeIcon.classList.add('hidden');
+        if (backdropEl) {
+          backdropEl.classList.add('hidden');
+          backdropEl.style.opacity = '';
+        }
+        menuPanel.classList.add('hidden');
+        menuPanel.style.opacity = '';
+        menuPanel.style.transform = '';
+        unlockScroll();
+      }
+    }
+
+    if (window.matchMedia) {
+      var desktopMql = window.matchMedia('(min-width: 1024px)');
+      if (typeof desktopMql.addEventListener === 'function') {
+        desktopMql.addEventListener('change', closeOnDesktopViewport);
+      } else if (typeof desktopMql.addListener === 'function') {
+        desktopMql.addListener(closeOnDesktopViewport);
+      }
+    } else {
+      window.addEventListener('resize', closeOnDesktopViewport);
+    }
   }
 
   function initAll() {

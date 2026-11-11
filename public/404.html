@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="en-PH">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Page Not Found | SuweldoTools</title>
+    <meta
+      name="description"
+      content="The page you requested could not be found on SuweldoTools. Return to the homepage or browse our free 2026 Philippine salary and payroll calculators."
+    />
+    <meta name="robots" content="noindex, nofollow" />
+
+    <!-- Favicon & App Icons -->
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        min-height: 100%;
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        background-color: #f8fafc;
+        color: #1e293b;
+        -webkit-font-smoothing: antialiased;
+        line-height: 1.5;
+      }
+
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      /* Header */
+      .site-header {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        width: 100%;
+        background-color: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid #e2e8f0;
+      }
+
+      .header-inner {
+        max-width: 72rem;
+        margin: 0 auto;
+        height: 4rem;
+        padding: 0 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
+      .brand-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.625rem;
+        min-width: 0;
+      }
+
+      .brand-logo {
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 0.5rem;
+        flex-shrink: 0;
+        object-fit: contain;
+      }
+
+      .brand-text {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      .brand-name {
+        font-size: 1.125rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: #0f172a;
+        line-height: 1.2;
+      }
+
+      .brand-link:hover .brand-name {
+        color: #047857;
+      }
+
+      .brand-tagline {
+        font-size: 0.625rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #64748b;
+        line-height: 1.2;
+      }
+
+      .header-nav {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #475569;
+      }
+
+      .header-nav a:hover {
+        color: #047857;
+      }
+
+      /* Main 404 Section */
+      .main-content {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2.5rem 1rem 3.5rem;
+      }
+
+      .error-card {
+        width: 100%;
+        max-width: 38rem;
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.06);
+        padding: 2rem 1.5rem;
+        text-align: center;
+      }
+
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.375rem 0.875rem;
+        border-radius: 9999px;
+        background-color: #ecfdf5;
+        border: 1px solid #a7f3d0;
+        color: #047857;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 1rem;
+      }
+
+      .error-code {
+        font-size: 3rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        color: #0f172a;
+        line-height: 1.05;
+        margin: 0 0 0.5rem;
+      }
+
+      .error-title {
+        font-size: 1.375rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0 0 0.75rem;
+      }
+
+      .error-description {
+        font-size: 0.9375rem;
+        color: #475569;
+        max-width: 30rem;
+        margin: 0 auto 1.75rem;
+      }
+
+      .cta-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        justify-content: center;
+        margin-bottom: 2rem;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        min-height: 2.75rem;
+        padding: 0.6875rem 1.25rem;
+        border-radius: 0.75rem;
+        font-size: 0.875rem;
+        font-weight: 700;
+        transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      }
+
+      .btn-primary {
+        background-color: #059669;
+        color: #ffffff;
+        border: 1px solid #059669;
+      }
+
+      .btn-primary:hover {
+        background-color: #047857;
+        border-color: #047857;
+      }
+
+      .btn-secondary {
+        background-color: #ffffff;
+        color: #0f172a;
+        border: 1px solid #cbd5e1;
+      }
+
+      .btn-secondary:hover {
+        background-color: #f8fafc;
+        border-color: #059669;
+        color: #047857;
+      }
+
+      .quick-links {
+        border-top: 1px solid #f1f5f9;
+        padding-top: 1.25rem;
+        text-align: left;
+      }
+
+      .quick-links-heading {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #64748b;
+        margin: 0 0 0.75rem;
+        text-align: center;
+      }
+
+      .quick-links-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+      }
+
+      .quick-link-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.625rem 0.875rem;
+        border-radius: 0.625rem;
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: #334155;
+        transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+      }
+
+      .quick-link-item:hover {
+        background-color: #ecfdf5;
+        border-color: #a7f3d0;
+        color: #047857;
+      }
+
+      /* Footer */
+      .site-footer {
+        border-top: 1px solid #e2e8f0;
+        background-color: #ffffff;
+        padding: 1.25rem 1rem;
+        text-align: center;
+        font-size: 0.75rem;
+        color: #64748b;
+      }
+
+      .footer-inner {
+        max-width: 72rem;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+      }
+
+      .footer-links {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 1rem;
+      }
+
+      .footer-links a:hover {
+        color: #047857;
+        text-decoration: underline;
+      }
+
+      @media (min-width: 640px) {
+        .error-card {
+          padding: 2.75rem 2.5rem;
+        }
+
+        .error-code {
+          font-size: 3.75rem;
+        }
+
+        .error-title {
+          font-size: 1.625rem;
+        }
+
+        .cta-group {
+          flex-direction: row;
+        }
+
+        .quick-links-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .footer-inner {
+          flex-direction: row;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a href="/" class="brand-link">
+          <img
+            src="/assets/aistudio/suweldotools-logo-icon_7c91e4ab.svg"
+            alt="SuweldoTools logo"
+            width="36"
+            height="36"
+            class="brand-logo"
+          />
+          <div class="brand-text">
+            <span class="brand-name">SuweldoTools</span>
+            <span class="brand-tagline">Philippine Salary Calculators</span>
+          </div>
+        </a>
+        <nav aria-label="Primary navigation" class="header-nav">
+          <a href="/">Home</a>
+          <a href="/calculators/">Calculators</a>
+          <a href="/blog/">Blog</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <section class="error-card" aria-labelledby="error-heading">
+        <div class="status-badge">Error 404 &middot; Page Not Found</div>
+        <p class="error-code" aria-hidden="true">404</p>
+        <h1 id="error-heading" class="error-title">We couldn’t find that page</h1>
+        <p class="error-description">
+          The link you followed may be outdated, moved, or mistyped. Use the links below to return
+          to the SuweldoTools homepage or explore our 2026 Philippine payroll calculators.
+        </p>
+
+        <div class="cta-group">
+          <a href="/" class="btn btn-primary">
+            <span>Go to Homepage</span>
+            <span aria-hidden="true">&rarr;</span>
+          </a>
+          <a href="/calculators/" class="btn btn-secondary">
+            <span>Browse All Calculators</span>
+          </a>
+        </div>
+
+        <div class="quick-links">
+          <h2 class="quick-links-heading">Popular Philippine Salary Tools</h2>
+          <div class="quick-links-grid">
+            <a href="/take-home-pay-calculator-philippines/" class="quick-link-item">
+              <span>Take-Home Pay Calculator</span>
+              <span aria-hidden="true">&rarr;</span>
+            </a>
+            <a href="/sss-contribution-table-2026/" class="quick-link-item">
+              <span>SSS Contribution Table 2026</span>
+              <span aria-hidden="true">&rarr;</span>
+            </a>
+            <a href="/philhealth-contribution-calculator/" class="quick-link-item">
+              <span>PhilHealth Calculator</span>
+              <span aria-hidden="true">&rarr;</span>
+            </a>
+            <a href="/13th-month-pay-calculator/" class="quick-link-item">
+              <span>13th Month Pay Calculator</span>
+              <span aria-hidden="true">&rarr;</span>
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <span>&copy; 2026 SuweldoTools. Independent Philippine payroll &amp; statutory calculators.</span>
+        <div class="footer-links">
+          <a href="/">Home</a>
+          <a href="/calculators/">Calculators</a>
+          <a href="/tl/">Filipino (/tl/)</a>
+          <a href="/about/">About</a>
+          <a href="/contact/">Contact</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

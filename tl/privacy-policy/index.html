@@ -3,7 +3,6 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="google" content="notranslate" />
     <title>Patakaran sa Privacy — SuweldoTools</title>
     <meta
       name="description"
@@ -92,7 +91,7 @@
   <body class="min-h-full flex flex-col font-sans antialiased text-slate-800 bg-slate-50 selection:bg-emerald-100 selection:text-emerald-900">
     <!-- Header / Navigation Bar -->
     <header class="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur-md">
-      <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-3 sm:px-4 lg:px-4 xl:px-8 gap-2 sm:gap-3 xl:gap-4">
+      <div class="mx-auto flex h-16 lg:h-[74px] max-w-6xl items-center justify-between px-3 sm:px-4 lg:px-6 xl:px-8 gap-2 sm:gap-3 lg:gap-6 xl:gap-7">
         <a href="/tl/" class="flex items-center gap-2 sm:gap-2.5 group min-w-0 shrink-0">
           <img
             src="/assets/aistudio/suweldotools-logo-icon_7c91e4ab.svg"
@@ -103,32 +102,25 @@
           />
           <div class="flex flex-col min-w-0">
             <span class="text-base sm:text-lg font-bold tracking-tight text-slate-900 group-hover:text-emerald-700 transition leading-tight truncate">SuweldoTools</span>
-            <span class="hidden min-[360px]:block text-[9px] sm:text-[10px] uppercase font-semibold tracking-tight sm:tracking-wider text-slate-500 leading-tight truncate">Philippines Payroll Utilities</span>
+            <span class="hidden min-[360px]:block text-[9px] sm:text-[10px] uppercase font-semibold tracking-tight sm:tracking-wider text-slate-500 leading-tight truncate">Sahod Calculators ng Pilipinas</span>
           </div>
         </a>
 
         <!-- Desktop Navigation (Hidden on all viewports for Filipino language) -->
-        <nav aria-label="Pangunahing nabigasyon" class="hidden">
-            <a href="/tl/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
+        <nav aria-label="Pangunahing nabigasyon" class="hidden lg:flex lg:items-center lg:ml-auto lg:gap-5 xl:gap-6 text-sm font-medium text-slate-600">
+            <a href="/tl/" class="inline-flex items-center px-1 py-1.5 text-slate-600 hover:text-emerald-600 border-b-2 border-transparent hover:border-emerald-600/30 transition-colors duration-150 whitespace-nowrap">
               Home
             </a>
-            <a href="/tl/take-home-pay-calculator-philippines/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
-              Take-Home Pay
+            <a href="/tl/calculators/" class="inline-flex items-center px-1 py-1.5 text-slate-600 hover:text-emerald-600 border-b-2 border-transparent hover:border-emerald-600/30 transition-colors duration-150 whitespace-nowrap">
+              Calculators
             </a>
-            <a href="/tl/13th-month-pay-calculator/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
-              13th Month Pay
-            </a>
-            <a href="/tl/sss-contribution-table-2026/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
-              Talahanayan ng SSS 2026
-            </a>
-            <a href="/tl/philhealth-contribution-calculator/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">PhilHealth Contribution Calculator</a>
-            <a href="/tl/blog/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
+            <a href="/tl/blog/" class="inline-flex items-center px-1 py-1.5 text-slate-600 hover:text-emerald-600 border-b-2 border-transparent hover:border-emerald-600/30 transition-colors duration-150 whitespace-nowrap">
               Blog
             </a>
-            <a href="/tl/about/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
+            <a href="/tl/about/" class="inline-flex items-center px-1 py-1.5 text-slate-600 hover:text-emerald-600 border-b-2 border-transparent hover:border-emerald-600/30 transition-colors duration-150 whitespace-nowrap">
               Tungkol sa Amin
             </a>
-            <a href="/tl/contact/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
+            <a href="/tl/contact/" class="inline-flex items-center px-1 py-1.5 text-slate-600 hover:text-emerald-600 border-b-2 border-transparent hover:border-emerald-600/30 transition-colors duration-150 whitespace-nowrap">
               Makipag-ugnayan
             </a>
           </nav>
@@ -183,7 +175,7 @@
             aria-expanded="false"
             aria-controls="mobileNavigationPanel"
             aria-label="Buksan ang menu ng nabigasyon"
-            class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition cursor-pointer"
+            class="inline-flex lg:hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition cursor-pointer"
           >
             <svg id="mobile-menu-icon-open" data-menu-icon="open" data-mobile-menu-open-icon class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
@@ -245,31 +237,10 @@
             <span class="text-xs text-slate-400">&rarr;</span>
           </a>
           <a
-            href="/tl/take-home-pay-calculator-philippines/"
+            href="/tl/calculators/"
             class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
           >
-            <span>Take-Home Pay</span>
-            <span class="text-xs text-slate-400">&rarr;</span>
-          </a>
-          <a
-            href="/tl/13th-month-pay-calculator/"
-            class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
-          >
-            <span>13th Month Pay</span>
-            <span class="text-xs text-slate-400">&rarr;</span>
-          </a>
-          <a
-            href="/tl/sss-contribution-table-2026/"
-            class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
-          >
-            <span>Talahanayan ng SSS 2026</span>
-            <span class="text-xs text-slate-400">&rarr;</span>
-          </a>
-          <a
-            href="/tl/philhealth-contribution-calculator/"
-            class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
-          >
-            <span>PhilHealth Contribution Calculator</span>
+            <span>Calculators</span>
             <span class="text-xs text-slate-400">&rarr;</span>
           </a>
           <a
@@ -323,61 +294,163 @@
       <!-- Policy Text Content -->
       <article class="bg-white p-5 sm:p-8 md:p-10 rounded-2xl border border-slate-200 shadow-sm space-y-6 text-slate-700 leading-relaxed text-sm sm:text-base break-words">
         <section>
-          <h2 class="text-lg sm:text-xl font-bold text-slate-900 mb-2">1. Pangkalahatang-ideya at Pangako sa Privacy</h2>
+          <h2 class="text-lg sm:text-xl font-bold text-slate-900 mb-2">1. Pangkalahatang-ideya at Pamamaraan sa Privacy</h2>
           <p>
-            Sa <strong>SuweldoTools</strong> (maa-access sa suweldotools.com), naniniwala kami na ang iyong personal na impormasyon sa sahod at benepisyo ay dapat manatiling ganap na kumpidensyal. Ipinapaliwanag ng Patakaran sa Privacy na ito ang aming pamamaraan sa pangangalaga ng iyong privacy.
+            Ang <strong>SuweldoTools</strong> (maa-access sa suweldotools.com) ay isang malayang pinatatakbong impormasyonal na website na itinatag at pinananatili ni Mohammad Irfan. Ipinapaliwanag ng Patakaran sa Privacy na ito kung anong impormasyon ang pinoproseso kapag ginagamit mo ang website, paano pinangangasiwaan sa iyong browser ang mga inilalagay sa calculator, at anong mga third-party service ang ginagamit kapag naglo-load ang mga pahina.
           </p>
           <p class="mt-2 font-medium text-slate-900">
-            Mahalagang Tandaan: <strong>Hindi kami nangongolekta, nagpapadala, nagre-record, o nag-iimbak ng anumang numero ng sahod, halaga ng allowance, o kaltas sa suweldo na inilalagay mo sa aming mga tool.</strong>
+            <strong>Nananatili sa Iyong Browser ang Calculator Inputs:</strong> Hindi kinokolekta, ipinapadala, nire-record, o iniimbak ng SuweldoTools ang mga numero ng sahod, halaga ng allowance, oras ng trabaho, o kaltas sa payroll na inilalagay mo sa aming <a href="/tl/calculators/" class="text-emerald-700 hover:underline">mga calculator</a>.
           </p>
           <p class="mt-2">
-            Ang lahat ng kalkulasyon sa sahod, pagtukoy sa Monthly Salary Credit (MSC) bracket, at kompyutasyon ng TRAIN Law withholding tax ay direktang isinasagawa sa loob ng browser ng iyong device gamit ang client-side JavaScript. Walang impormasyon sa payroll na ipinapadala sa network o sine-save sa anumang database. Kapag isinara o ni-refresh mo ang iyong browser tab, agad na nabubura ang iyong mga inilagay na numero.
+            Ang lahat ng kompyutasyon sa sahod (gaya ng sa aming <a href="/tl/take-home-pay-calculator-philippines/" class="text-emerald-700 font-semibold hover:underline">Calculator ng Take-Home Pay</a>), pagtukoy sa Monthly Salary Credit (MSC), at pagtantya ng TRAIN Law withholding tax ay direktang isinasagawa sa loob ng browser ng iyong device gamit ang client-side JavaScript. Walang inilagay na impormasyon sa payroll na ipinapadala sa network o sine-save sa database. Kapag isinara o ni-refresh mo ang iyong browser tab, agad na nabubura ang iyong mga inilagay sa calculator (maliban kung pansamantalang ipinapasa sa <code>sessionStorage</code> habang direktang lumilipat ng wika sa parehong tab, gaya ng ipinaliwanag sa Seksyon 2).
+          </p>
+          <p class="mt-2">
+            Bagama't lokal na tumatakbo ang mga kalkulasyon sa iyong browser, ang mga pampublikong pahina ay gumagawa ng network request sa mga third-party service upang mag-load ng mga anunsyo sa website (<strong>Supabase</strong>) at, kung tatanggapin mo lamang ang analytics cookies, upang sukatin ang pangkalahatang trapiko ng website (<strong>Google Analytics 4</strong>), gaya ng ipinaliwanag sa ibaba.
           </p>
         </section>
 
         <section>
-          <h2 class="text-lg sm:text-xl font-bold text-slate-900 mb-2">2. Cookies at Local Storage</h2>
+          <h2 class="text-lg sm:text-xl font-bold text-slate-900 mb-2">2. Cookies at Browser Storage</h2>
           <p>
-            Ang SuweldoTools ay hindi gumagamit ng advertising cookies o cross-site advertising tracking mechanisms. Gayunpaman, dahil gumagamit ang mga pampublikong pahina ng <strong>Google Analytics 4 (GA4)</strong> upang sukatin ang trapiko at pangkalahatang paggamit ng website, maaaring magtakda at magbasa ang Google Analytics ng first-party analytics cookies (gaya ng <code>_ga</code> at property-specific analytics cookies) sa iyong browser upang matukoy ang mga pagbisita at makapangalap ng pinagsama-samang istatistika ng session.
+            Ang SuweldoTools ay hindi nagtatakda ng advertising cookies o cross-site ad-tracking cookies. Gumagamit lamang ang mga pampublikong pahina ng <strong>Google Analytics 4 (GA4)</strong> upang sukatin ang trapiko at pangkalahatang paggamit ng website kapag hayagan mong tinanggap ang analytics sa banner ng Mga Setting ng Cookie. Hangga't hindi mo pinipindot ang <strong>Tanggapin ang Cookies</strong>, nananatiling naka-block ang GA4 at walang Google Analytics script o analytics cookie na nilo-load. Kung tatanggapin mo ang analytics, maaaring magtakda at magbasa ang Google Analytics ng first-party analytics cookies (gaya ng <code>_ga</code> at property-specific analytics cookies tulad ng <code>_ga_E3Z69Z6Y0J</code>) sa iyong browser upang matukoy ang mga pagbisita at makabuo ng pinagsama-samang istatistika ng session. Kung pipiliin mo ang <strong>Tanggihan</strong> o babalewalain ang banner, mananatiling naka-disable ang analytics.
           </p>
           <p class="mt-2">
-            Bukod dito, gumagamit ang SuweldoTools ng karaniwang local browser storage sa iyong device para lamang sa maayos na paggana ng website:
+            Bukod dito, gumagamit ang SuweldoTools ng karaniwang browser storage sa iyong device para sa paggana ng website:
           </p>
           <ul class="list-disc pl-5 mt-2 space-y-1">
-            <li><strong><code>localStorage</code>:</strong> Nagtatabi ng pinili mong wika sa pagitan ng English at Filipino/Tagalog (<code>suweldotools_lang</code> at <code>suweldotools_explicit_lang</code>) at nagtatala kapag isinara mo na ang site-wide announcement banner (<code>suweldotools_announcement_dismissed</code>) upang hindi ito paulit-ulit na lumabas.</li>
-            <li><strong><code>sessionStorage</code>:</strong> Pansamantalang nagtatabi ng iyong kasalukuyang calculator inputs sa iyong browser tab kapag lumilipat ka sa pagitan ng English at Filipino/Tagalog na bersyon ng isang calculator (<code>suweldotools_calc_handoff</code>, na agad ding binubura pagka-load ng mga detalye sa nilipatang pahina) at nagtatala kung isinara mo ang language-suggestion banner sa kasalukuyan mong tab session (<code>suweldotools_lang_banner_dismissed</code>).</li>
+            <li><strong><code>localStorage</code>:</strong> Nagtatabi ng iyong desisyon sa analytics cookie consent (<code>suweldotools_cookie_consent</code>, kabilang ang status na <code>accepted</code> o <code>rejected</code>, oras ng pagpili, anim na buwang expiration timestamp, at bersyon ng consent) sa loob ng anim (6) na buwan upang hindi paulit-ulit na lumabas ang tanong sa bawat pahina; nagtatabi ng pinili mong wika sa pagitan ng English at Filipino/Tagalog (<code>suweldotools_lang</code> at <code>suweldotools_explicit_lang</code>); at nagtatabi ng content hash kapag isinara o na-click mo ang isang site-wide announcement popup o banner (<code>suweldotools_announcement_dismissed</code>) upang hindi paulit-ulit na lumabas ang parehong anunsyo sa mga susunod na pag-load ng pahina.</li>
+            <li><strong><code>sessionStorage</code>:</strong> Pansamantalang nagtatabi ng iyong kasalukuyang calculator inputs sa aktibo mong browser tab kapag lumilipat ka sa pagitan ng English at Filipino/Tagalog na bersyon ng isang calculator (<code>suweldotools_calc_handoff</code>, na agad ding tinatanggal sa pamamagitan ng <code>sessionStorage.removeItem</code> pagka-load ng mga detalye sa nilipatang pahina) at nagtatala kung isinara mo ang language-suggestion prompt sa kasalukuyan mong tab session (<code>suweldotools_lang_banner_dismissed</code>).</li>
           </ul>
         </section>
 
         <section>
-          <h2 class="text-lg sm:text-xl font-bold text-slate-900 mb-2">3. Transparency sa Advertising at Analytics</h2>
+          <h2 class="text-lg sm:text-xl font-bold text-slate-900 mb-2">3. Mga Anunsyo sa Website at Request sa Supabase</h2>
           <p>
-            Gumagamit ang SuweldoTools ng <strong>Google Analytics 4 (GA4)</strong> sa mga pampublikong pahina upang sukatin ang trapiko sa website at maunawaan ang pangkalahatang paggamit nito. Maaaring mangolekta ang Google Analytics ng karaniwang impormasyon sa paggamit (gaya ng mga binisitang pahina at tagal ng pagbisita), impormasyon sa device at browser (gaya ng uri ng device, operating system, at bersyon ng browser), at pangkalahatang interaction data. Sa application code ng aming website, ang mga numero ng sahod, allowance, oras ng trabaho, at detalye ng kaltas sa payroll na inilalagay sa aming mga calculator ay pinoproseso nang lokal sa iyong browser at hindi ipinapadala sa Google Analytics sa pamamagitan ng aming code, mga URL, o custom analytics events (pakitandaan na walang kontrol ang SuweldoTools sa mga third-party browser extension o external software na naka-install sa iyong sariling device).
+            Ang mga pampublikong pahina ay may kasamang client-side script (<code>/src/announcement-popup.ts</code>) na gumagamit ng <strong>Supabase</strong> upang suriin kung may aktibong anunsyo o abiso sa website (gaya ng impormasyon tungkol sa mga update sa talahanayan ng calculator o paunawa sa site) na kasalukuyang nakalathala.
+          </p>
+          <ul class="list-disc pl-5 mt-2 space-y-1.5">
+            <li><strong>Kailan ginagawa ang request:</strong> Sa bawat pag-load ng pampublikong pahina (lahat ng pahina maliban sa <code>/admin</code>), kapag naka-configure ang mga credential ng Supabase project, nagpapadala ang iyong browser ng awtomatikong HTTP <code>GET</code> request sa nakatakdang Supabase REST API endpoint (<code>/rest/v1/site_announcements</code>) upang tingnan kung may aktibong nakalathalang anunsyo (<code>slot=eq.published</code> at <code>is_active=eq.true</code>).</li>
+            <li><strong>Katangian ng request:</strong> Ang request ay anonymous para sa mga bumibisita sa website. Gumagamit lamang ito ng pampublikong Supabase publishable/anonymous key sa <code>apikey</code> at <code>Authorization: Bearer</code> headers at hindi nag-o-authenticate ng indibidwal na user o nagpapadala ng user session token.</li>
+            <li><strong>Impormasyong naipapadala:</strong> Ang application code ng aming website ay hindi nagpapadala ng anumang calculator inputs, cookies, o <code>localStorage</code> values sa request na ito. Gayunpaman, dahil direktang kumokonekta ang iyong browser sa Supabase endpoint sa pamamagitan ng HTTPS, ang karaniwang network request metadata—kabilang ang iyong IP address, browser <code>User-Agent</code>, referring page o origin header, at oras ng request—ay awtomatikong naipapadala sa Supabase bilang bahagi ng normal na HTTP communication.</li>
+            <li><strong>Lokal na pagtatala ng pagsasara (dismissal):</strong> Kapag may naibalik na aktibong anunsyo, kinukuwenta ng iyong browser ang deterministic hash ng nilalaman ng anunsyo at tinitingnan ang <code>suweldotools_announcement_dismissed</code> sa <code>localStorage</code> ng iyong browser. Ang pagsasara mo sa anunsyo ay pinangangasiwaan lamang nang lokal sa iyong browser at hindi ipinapadala pabalik sa Supabase.</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 class="text-lg sm:text-xl font-bold text-slate-900 mb-2">4. Analytics at Advertising</h2>
+          <p>
+            Gumagamit lamang ang SuweldoTools ng <strong>Google Analytics 4 (GA4)</strong> sa mga pampublikong pahina kapag tinanggap mo ang analytics sa banner ng Mga Setting ng Cookie. Kapag pinagana, maaaring mangolekta ang Google Analytics ng karaniwang impormasyon sa paggamit (gaya ng mga binisitang pahina at tagal ng pagbisita), metadata ng device at browser (gaya ng kategorya ng device, operating system, at bersyon ng browser), at pangkalahatang interaction data. Sa application code ng aming website, ang mga numero ng sahod, allowance, oras ng trabaho, at resulta ng kaltas sa payroll na inilalagay sa aming mga calculator ay pinoproseso nang lokal sa iyong browser at hindi ipinapadala sa Google Analytics sa pamamagitan ng aming code, mga URL, o custom analytics events (pakitandaan na walang kontrol ang SuweldoTools sa mga third-party browser extension o external software na naka-install sa iyong sariling device).
           </p>
           <p class="mt-2">
-            Ang SuweldoTools ay kasalukuyang hindi gumagamit ng Google AdSense o third-party advertising services. Sa GA4 tracking snippet ng aming website, tahasan naming itinakda ang <code>allow_google_signals: false</code> at <code>allow_ad_personalization_signals: false</code> upang i-disable ang Google Signals at advertising personalization sa antas ng tag (habang binibigyang-linaw na ang mga code-level tag setting ay hiwalay sa mga property-level Admin console setting ng Google Analytics). Kung gagamit ng third-party advertising services sa hinaharap, ia-update ang Patakaran sa Privacy na ito upang ipaliwanag ang kaukulang pamamaraan.
+            Ang iyong desisyon sa analytics consent (<code>accepted</code> o <code>rejected</code>) ay itinatabi sa <code>localStorage</code> ng iyong browser sa ilalim ng key na <code>suweldotools_cookie_consent</code> sa loob ng anim (6) na buwan; pagkalipas nito, aalisin ang nag-expire na tala at muling hihingin ng banner ang iyong desisyon. Maaari mong buksan muli ang <strong>Mga Setting ng Cookie</strong> mula sa footer ng alinmang pampublikong pahina anumang oras upang bawiin o baguhin ang iyong pinili. Kung babaguhin mo ang iyong desisyon mula sa pagtanggap patungo sa pagtanggi, ia-update ng SuweldoTools ang <code>suweldotools_cookie_consent</code> sa <code>rejected</code>, pipigilan ang karagdagang GA4 initialization o tracking, at susubukang burahin ang mga umiiral na first-party GA4 cookies (<code>_ga</code> at <code>_ga_*</code>) sa sakop na domain at path ng website.
+          </p>
+          <p class="mt-2">
+            Ang SuweldoTools ay kasalukuyang hindi gumagamit ng Google AdSense o third-party advertising networks. Sa GA4 tracking snippet ng aming website, itinakda namin ang <code>allow_google_signals: false</code> at <code>allow_ad_personalization_signals: false</code> upang i-disable ang Google Signals at advertising personalization sa antas ng tag (habang binibigyang-linaw na ang mga code-level tag setting ay hiwalay sa mga property-level Admin console setting ng Google Analytics). Kung gagamit ng mga serbisyo sa advertising sa hinaharap, ia-update ang Patakaran sa Privacy na ito.
           </p>
         </section>
 
         <section>
-          <h2 class="text-lg sm:text-xl font-bold text-slate-900 mb-2">4. Mga Server Log</h2>
+          <h2 class="text-lg sm:text-xl font-bold text-slate-900 mb-2">5. Hosting, Mga Infrastructure Log, at Pagpapanatili ng Data</h2>
           <p>
-            Tulad ng karamihan sa mga web host at content delivery networks, ang mga karaniwang HTTP request log (gaya ng IP address, user agent, petsa at oras ng request, at binisitang URL) ay awtomatikong nabubuo para sa seguridad ng network at proteksyon laban sa pang-aabuso. Ang mga log na ito ay walang nilalamang pangalan ng user o detalye ng sahod.
+            Kapag binibisita mo ang SuweldoTools o kapag humihiling ang iyong browser ng mga resource mula sa mga third-party infrastructure provider (gaya ng aming web hosting at content delivery network provider, Supabase para sa mga request ng anunsyo, at Google para sa mga script ng analytics), ang mga karaniwang HTTP request log (gaya ng IP address, browser user-agent, petsa at oras ng request, at hiniling na URL) ay awtomatikong pinoproseso ng mga provider na iyon upang maipahatid ang nilalaman, mapanatili ang katatagan ng network, at mapigilan ang pang-aabuso.
+          </p>
+          <p class="mt-2">
+            Ang SuweldoTools ay hindi nag-iimbak ng mga personal na calculator input sa server. Ang pagpapanatili at pagproseso ng mga network log, analytics record, at API request ay pinamamahalaan ng karaniwang pamamaraan ng kani-kanilang infrastructure at service provider. Kung makikipag-ugnayan ka sa amin sa pamamagitan ng email, mananatili ang iyong mensahe at email address sa aming email inbox para sa pagsusuri at pagsagot sa iyong katanungan.
           </p>
         </section>
 
         <section>
-          <h2 class="text-lg sm:text-xl font-bold text-slate-900 mb-2">5. Mga Panlabas na Sanggunian at Portal ng Gobyerno</h2>
+          <h2 class="text-lg sm:text-xl font-bold text-slate-900 mb-2">6. Philippine Data Privacy Act of 2012 (Republic Act No. 10173)</h2>
           <p>
-            Ang aming mga artikulo at gabay ay bumabanggit sa mga opisyal na ahensya ng pamahalaan, kabilang ang Social Security System (sss.gov.ph), Philippine Health Insurance Corporation (philhealth.gov.ph), Pag-IBIG Fund (pagibigfund.gov.ph), at Bureau of Internal Revenue (bir.gov.ph). Hindi namin pinangangasiwaan ang mga panlabas na website na ito at hinihikayat namin ang mga user na basahin ang kani-kanilang patakaran sa privacy.
+            Bilang pagkilala sa mga pangkalahatang prinsipyo ng transparency at data minimization sa ilalim ng <strong>Philippine Data Privacy Act of 2012 (Republic Act No. 10173)</strong>, idinisenyo ang SuweldoTools upang makapagtantya ang mga bumibisita ng kanilang sahod at mga kontribusyon nang direkta sa kanilang browser nang hindi kinakailangang gumawa ng account o magsumite ng personal na rekord ng payroll. Ang Patakaran sa Privacy na ito ay inilalahad upang maging malinaw kung paano gumagana ang website at kung anong mga panlabas na serbisyo ang ginagamit nito; hindi ito nangangahulugan ng pag-angkin ng pormal na legal certification, akreditasyon mula sa gobyerno, o third-party legal audit.
           </p>
         </section>
 
         <section>
-          <h2 class="text-lg sm:text-xl font-bold text-slate-900 mb-2">6. Mga Katanungan at Pakikipag-ugnayan</h2>
+          <h2 class="text-lg sm:text-xl font-bold text-slate-900 mb-2">7. Mga Panlabas na Sanggunian at Portal ng Gobyerno</h2>
           <p>
-            Kung mayroon kang mga katanungan tungkol sa aming patakaran sa privacy, maaari kang makipag-ugnayan sa aming editorial team sa <a href="mailto:contact@suweldotools.com" class="text-emerald-700 font-semibold hover:underline break-all sm:break-normal">contact@suweldotools.com</a>.
+            Ang aming mga gabay at sangguniang pahina ay naglalaman ng mga link patungo sa mga pampublikong website ng pamahalaan (na nakalista sa aming pahina ng <a href="/tl/sources/" class="text-emerald-700 font-semibold hover:underline">Mga Opisyal na Sanggunian</a>), kabilang ang Social Security System (sss.gov.ph), Philippine Health Insurance Corporation (philhealth.gov.ph), Pag-IBIG Fund (pagibigfund.gov.ph), Bureau of Internal Revenue (bir.gov.ph), at Department of Labor and Employment (dole.gov.ph), pati na rin sa mga panlabas na social media platform. Hindi namin pinatatakbo ang mga panlabas na website na ito at hinihikayat namin ang mga bumibisita na basahin ang kani-kanilang patakaran sa privacy, pati na rin ang aming <a href="/tl/disclaimer/" class="text-emerald-700 font-semibold hover:underline">Paunawa at Disclaimer</a>.
           </p>
+        </section>
+
+        <section>
+          <h2 class="text-lg sm:text-xl font-bold text-slate-900 mb-2">8. Mga Katanungan at Pakikipag-ugnayan</h2>
+          <p>
+            Kung mayroon kang mga katanungan tungkol sa Patakaran sa Privacy na ito o kung paano pinangangasiwaan ng SuweldoTools ang impormasyon, maaari kang makipag-ugnayan sa nagpapatakbo ng website sa <a href="mailto:contact@suweldotools.com" class="text-emerald-700 font-semibold hover:underline break-all sm:break-normal">contact@suweldotools.com</a>. Maaari mo ring bisitahin ang aming pahina sa <a href="/tl/contact/" class="text-emerald-700 font-semibold hover:underline">Makipag-ugnayan</a>, basahin ang <a href="/tl/about/" class="text-emerald-700 font-semibold hover:underline">Tungkol sa SuweldoTools</a>, o tingnan ang aming <a href="/tl/corrections-policy/" class="text-emerald-700 font-semibold hover:underline">Patakaran sa Pagwawasto</a> kung mag-uulat ng pagkakaiba sa kalkulasyon o error sa nilalaman.
+          </p>
+          <p class="mt-2 text-xs sm:text-sm text-slate-600">
+            <strong>Paalala sa Privacy:</strong> Huwag magsama ng mga password, government ID number, detalye ng bank account, payslip, o iba pang sensitibong personal na impormasyon sa iyong ipadadalang email.
+          </p>
+        </section>
+
+        <!-- Mga Kaugnay na Sanggunian -->
+        <section class="pt-6 border-t border-slate-200">
+          <h2 class="text-lg sm:text-xl font-bold text-slate-900 mb-2">Mga Kaugnay na Sanggunian</h2>
+          <p class="text-sm sm:text-base text-slate-600 mb-4">
+            Alamin ang higit pa tungkol sa layunin ng website, mga pampublikong sanggunian, mga patakaran, at mga salary calculator:
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <a
+              href="/tl/about/"
+              class="group flex flex-col p-4 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-emerald-50/60 hover:border-emerald-300 transition"
+            >
+              <span class="text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition flex items-center justify-between">
+                <span>Tungkol sa SuweldoTools</span>
+                <span class="text-slate-400 group-hover:text-emerald-600 text-xs" aria-hidden="true">&rarr;</span>
+              </span>
+              <span class="text-xs text-slate-500 mt-1">Alamin ang layunin ng website, nagtatag nito, at client-side na mga calculator.</span>
+            </a>
+            <a
+              href="/tl/sources/"
+              class="group flex flex-col p-4 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-emerald-50/60 hover:border-emerald-300 transition"
+            >
+              <span class="text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition flex items-center justify-between">
+                <span>Mga Opisyal na Sanggunian</span>
+                <span class="text-slate-400 group-hover:text-emerald-600 text-xs" aria-hidden="true">&rarr;</span>
+              </span>
+              <span class="text-xs text-slate-500 mt-1">Mga opisyal na circular ng gobyerno, talahanayan ng kontribusyon, at basehan sa batas.</span>
+            </a>
+            <a
+              href="/tl/editorial-policy/"
+              class="group flex flex-col p-4 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-emerald-50/60 hover:border-emerald-300 transition"
+            >
+              <span class="text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition flex items-center justify-between">
+                <span>Patakarang Editoryal</span>
+                <span class="text-slate-400 group-hover:text-emerald-600 text-xs" aria-hidden="true">&rarr;</span>
+              </span>
+              <span class="text-xs text-slate-500 mt-1">Paano inihahanda ang nilalaman at mga batayan sa calculator mula sa mga pampublikong sanggunian.</span>
+            </a>
+            <a
+              href="/tl/corrections-policy/"
+              class="group flex flex-col p-4 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-emerald-50/60 hover:border-emerald-300 transition"
+            >
+              <span class="text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition flex items-center justify-between">
+                <span>Patakaran sa Pagwawasto</span>
+                <span class="text-slate-400 group-hover:text-emerald-600 text-xs" aria-hidden="true">&rarr;</span>
+              </span>
+              <span class="text-xs text-slate-500 mt-1">Paano mag-ulat ng error sa kalkulasyon o nilalaman at paano ito sinusuri.</span>
+            </a>
+            <a
+              href="/tl/disclaimer/"
+              class="group flex flex-col p-4 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-emerald-50/60 hover:border-emerald-300 transition"
+            >
+              <span class="text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition flex items-center justify-between">
+                <span>Paunawa at Disclaimer</span>
+                <span class="text-slate-400 group-hover:text-emerald-600 text-xs" aria-hidden="true">&rarr;</span>
+              </span>
+              <span class="text-xs text-slate-500 mt-1">Mahahalagang limitasyon tungkol sa mga tantya ng sahod at impormasyon sa buwis.</span>
+            </a>
+            <a
+              href="/tl/calculators/"
+              class="group flex flex-col p-4 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-emerald-50/60 hover:border-emerald-300 transition"
+            >
+              <span class="text-sm font-bold text-slate-900 group-hover:text-emerald-700 transition flex items-center justify-between">
+                <span>Tingnan ang Lahat ng Calculator</span>
+                <span class="text-slate-400 group-hover:text-emerald-600 text-xs" aria-hidden="true">&rarr;</span>
+              </span>
+              <span class="text-xs text-slate-500 mt-1">Gamitin ang aming mga calculator ng sahod at benepisyo sa Pilipinas.</span>
+            </a>
+          </div>
         </section>
       </article>
     </main>
@@ -385,9 +458,9 @@
     <!-- Footer Component -->
     <footer class="mt-12 sm:mt-16 border-t border-slate-200 bg-white text-slate-600 text-sm">
       <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-        <div class="grid grid-cols-2 md:grid-cols-12 gap-x-6 gap-y-6 lg:gap-x-8 pb-8 border-b border-slate-100">
+        <div class="grid grid-cols-2 lg:grid-cols-12 gap-x-6 gap-y-6 lg:gap-x-8 pb-8 border-b border-slate-100">
           <!-- Brand Section -->
-          <div class="col-span-2 md:col-span-5 space-y-3">
+          <div class="col-span-2 lg:col-span-3 space-y-3">
             <a href="/tl/" class="inline-flex items-center gap-2.5 group rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2">
               <img
                 src="/assets/aistudio/suweldotools-logo-icon_7c91e4ab.svg"
@@ -397,7 +470,7 @@
               <span class="font-bold text-slate-900 text-base group-hover:text-emerald-700 transition">SuweldoTools</span>
             </a>
             <p class="text-xs sm:text-sm text-slate-500 max-w-sm leading-relaxed mt-1">
-              Mabilis, tumpak, at mobile-friendly na mga salary tool at statutory contribution calculators para sa mga empleyadong Pilipino, freelancer, at HR professionals.
+              Tinutulungan ang mga Pilipino na maunawaan ang kanilang sahod, kuwentahin ang take-home pay, at tantyahin ang mga kontribusyon sa gobyerno gamit ang libre at madaling gamiting mga payroll calculator.
             </p>
             <p class="text-xs text-slate-400">
               Domain: <a href="https://suweldotools.com/tl/" class="text-slate-500 hover:text-emerald-700 hover:underline transition rounded-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">suweldotools.com</a>
@@ -405,8 +478,8 @@
           </div>
 
           <!-- Tools Section -->
-          <div class="col-span-1 md:col-span-3 space-y-3">
-            <p class="font-bold text-xs uppercase tracking-wider text-slate-900">Salary Tools</p>
+          <div class="col-span-1 lg:col-span-3 space-y-3">
+            <p class="font-bold text-xs uppercase tracking-wider text-slate-900">All Calculators</p>
             <ul class="space-y-2.5 text-xs sm:text-sm">
               <li>
                 <a href="/tl/take-home-pay-calculator-philippines/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Take-Home Pay Calculator</a>
@@ -420,11 +493,20 @@
               <li>
                 <a href="/tl/philhealth-contribution-calculator/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">PhilHealth Contribution Calculator</a>
               </li>
+              <li>
+                <a href="/tl/overtime-holiday-pay-calculator-philippines/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Overtime at Holiday Pay Calculator</a>
+              </li>
+              <li>
+                <a href="/tl/pagibig-mp2-savings-estimator/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Pag-IBIG at MP2 Savings Estimator</a>
+              </li>
+              <li>
+                <a href="/tl/final-pay-calculator-philippines/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Kalkulador ng Final Pay</a>
+              </li>
             </ul>
           </div>
 
           <!-- Company Section -->
-          <div class="col-span-1 md:col-span-2 space-y-3">
+          <div class="col-span-1 lg:col-span-2 space-y-3">
             <p class="font-bold text-xs uppercase tracking-wider text-slate-900">Kumpanya</p>
             <ul class="space-y-2.5 text-xs sm:text-sm">
               <li>
@@ -439,15 +521,31 @@
             </ul>
           </div>
 
+          <!-- Resources Section -->
+          <div class="col-span-1 lg:col-span-2 space-y-3">
+            <p class="font-bold text-xs uppercase tracking-wider text-slate-900">Mga Sanggunian</p>
+            <ul class="space-y-2.5 text-xs sm:text-sm">
+              <li>
+                <a href="/tl/sources/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Mga Opisyal na Sanggunian</a>
+              </li>
+              <li>
+                <a href="/tl/editorial-policy/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Patakarang Editoryal</a>
+              </li>
+              <li>
+                <a href="/tl/corrections-policy/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Patakaran sa Pagwawasto</a>
+              </li>
+            </ul>
+          </div>
+
           <!-- Legal Section -->
-          <div class="col-span-2 md:col-span-2 space-y-3">
+          <div class="col-span-1 lg:col-span-2 space-y-3">
             <p class="font-bold text-xs uppercase tracking-wider text-slate-900">Legal</p>
             <ul class="space-y-2.5 text-xs sm:text-sm">
               <li>
-                <a href="/tl/privacy-policy/" class="text-emerald-700 font-semibold hover:underline" aria-current="page">Patakaran sa Privacy</a>
+                <a href="/tl/privacy-policy/" class="text-emerald-700 font-semibold hover:underline transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1" aria-current="page">Patakaran sa Privacy</a>
               </li>
               <li>
-                <a href="/tl/disclaimer/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Disclaimer</a>
+                <a href="/tl/disclaimer/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Pagtatanggi (Disclaimer)</a>
               </li>
             </ul>
           </div>
@@ -493,7 +591,7 @@
               </svg>
             </a>
             <a
-              href="https://pin.it/4fRe9WNxE"
+              href="https://www.pinterest.com/suweldotools/"
               target="_blank"
               rel="noopener noreferrer"
               class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#E60023] text-white shadow-xs transition-all duration-200 motion-safe:hover:-translate-y-0.5 hover:bg-[#cc001f] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E60023] focus-visible:ring-offset-2"

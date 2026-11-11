@@ -3,7 +3,6 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="google" content="notranslate" />
     <title>Overtime &amp; Holiday Pay Calculator PH 2026 | SuweldoTools</title>
     <meta
       name="description"
@@ -151,7 +150,7 @@
   <body class="min-h-full flex flex-col font-sans antialiased text-slate-800 bg-slate-50 selection:bg-emerald-100 selection:text-emerald-900">
     <!-- Header / Navigation Bar -->
     <header class="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur-md">
-      <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-3 sm:px-4 lg:px-4 xl:px-8 gap-2 sm:gap-3 xl:gap-4">
+      <div class="mx-auto flex h-16 lg:h-[74px] max-w-6xl items-center justify-between px-3 sm:px-4 lg:px-6 xl:px-8 gap-2 sm:gap-3 lg:gap-6 xl:gap-7">
         <a href="/" class="flex items-center gap-2 sm:gap-2.5 group min-w-0 shrink-0">
           <img
             src="/assets/aistudio/suweldotools-logo-icon_7c91e4ab.svg"
@@ -162,21 +161,17 @@
           />
           <div class="flex flex-col min-w-0">
             <span class="text-base sm:text-lg font-bold tracking-tight text-slate-900 group-hover:text-emerald-700 transition leading-tight truncate">SuweldoTools</span>
-            <span class="hidden min-[360px]:block text-[9px] sm:text-[10px] uppercase font-semibold tracking-tight sm:tracking-wider text-slate-500 leading-tight truncate">Philippines Payroll Utilities</span>
+            <span class="hidden min-[360px]:block text-[9px] sm:text-[10px] uppercase font-semibold tracking-tight sm:tracking-wider text-slate-500 leading-tight truncate">Philippine Salary Calculators</span>
           </div>
         </a>
 
         <!-- Desktop Navigation (Hidden on all viewports) -->
-        <nav aria-label="Main navigation" class="hidden">
-          <a href="/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">Home</a>
-          <a href="/take-home-pay-calculator-philippines/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">Take-Home Pay</a>
-          <a href="/13th-month-pay-calculator/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">13th Month Pay</a>
-          <a href="/overtime-holiday-pay-calculator-philippines/" class="py-1 text-emerald-600 font-semibold border-b-2 border-emerald-600 whitespace-nowrap" aria-current="page">Overtime &amp; Holiday Pay</a>
-          <a href="/sss-contribution-table-2026/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">SSS Table 2026</a>
-          <a href="/philhealth-contribution-calculator/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">PhilHealth Calculator</a>
-          <a href="/blog/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">Blog</a>
-          <a href="/about/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">About</a>
-          <a href="/contact/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">Contact</a>
+        <nav aria-label="Main navigation" class="hidden lg:flex lg:items-center lg:ml-auto lg:gap-5 xl:gap-6 text-sm font-medium text-slate-600">
+          <a href="/" class="inline-flex items-center px-1 py-1.5 text-slate-600 hover:text-emerald-600 border-b-2 border-transparent hover:border-emerald-600/30 transition-colors duration-150 whitespace-nowrap">Home</a>
+          <a href="/calculators/" class="inline-flex items-center px-1 py-1.5 text-slate-600 hover:text-emerald-600 border-b-2 border-transparent hover:border-emerald-600/30 transition-colors duration-150 whitespace-nowrap">Calculators</a>
+          <a href="/blog/" class="inline-flex items-center px-1 py-1.5 text-slate-600 hover:text-emerald-600 border-b-2 border-transparent hover:border-emerald-600/30 transition-colors duration-150 whitespace-nowrap">Blog</a>
+          <a href="/about/" class="inline-flex items-center px-1 py-1.5 text-slate-600 hover:text-emerald-600 border-b-2 border-transparent hover:border-emerald-600/30 transition-colors duration-150 whitespace-nowrap">About</a>
+          <a href="/contact/" class="inline-flex items-center px-1 py-1.5 text-slate-600 hover:text-emerald-600 border-b-2 border-transparent hover:border-emerald-600/30 transition-colors duration-150 whitespace-nowrap">Contact</a>
         </nav>
 
         <!-- Desktop Language Selector (Hidden on all viewports) -->
@@ -231,7 +226,7 @@
             aria-expanded="false"
             aria-controls="mobileNavigationPanel"
             aria-label="Open navigation menu"
-            class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition cursor-pointer"
+            class="inline-flex lg:hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition cursor-pointer"
           >
             <svg id="mobile-menu-icon-open" data-menu-icon="open" data-mobile-menu-open-icon class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
@@ -293,39 +288,10 @@
             <span class="text-xs text-slate-400">&rarr;</span>
           </a>
           <a
-            href="/take-home-pay-calculator-philippines/"
+            href="/calculators/"
             class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
           >
-            <span>Take-Home Pay</span>
-            <span class="text-xs text-slate-400">&rarr;</span>
-          </a>
-          <a
-            href="/13th-month-pay-calculator/"
-            class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
-          >
-            <span>13th Month Pay</span>
-            <span class="text-xs text-slate-400">&rarr;</span>
-          </a>
-          <a
-            href="/overtime-holiday-pay-calculator-philippines/"
-            aria-current="page"
-            class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80 transition"
-          >
-            <span>Overtime &amp; Holiday Pay</span>
-            <span class="text-xs font-semibold text-emerald-600">Active</span>
-          </a>
-          <a
-            href="/sss-contribution-table-2026/"
-            class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
-          >
-            <span>SSS Table 2026</span>
-            <span class="text-xs text-slate-400">&rarr;</span>
-          </a>
-          <a
-            href="/philhealth-contribution-calculator/"
-            class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
-          >
-            <span>PhilHealth Contribution Calculator</span>
+            <span>Calculators</span>
             <span class="text-xs text-slate-400">&rarr;</span>
           </a>
           <a
@@ -372,7 +338,7 @@
           Overtime &amp; Holiday Pay Calculator Philippines (2026)
         </h1>
         <p class="mt-1 sm:mt-2 text-xs sm:text-base text-slate-600 leading-snug sm:leading-relaxed max-w-4xl">
-          Compute your estimated Philippine overtime pay, scheduled rest day pay (130%), special non-working holiday pay (130% or 150%), regular holiday pay (200% or 260%), and 10% night shift differential using verified DOLE Labor Code multipliers.
+          Compute your estimated Philippine overtime pay, scheduled rest day pay (130%), special non-working holiday pay (130% or 150%), regular holiday pay (200% or 260%), and 10% night shift differential using published DOLE Labor Code multipliers and documented calculation assumptions.
         </p>
         <div class="mt-2 sm:mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
           <span class="font-semibold text-emerald-800">Legal Basis: Labor Code of the Philippines (Arts. 82–94)</span>
@@ -1041,7 +1007,7 @@
                 C. Monthly-Paid vs. Daily-Paid Payroll Presentation
               </h3>
               <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                For <strong>monthly-paid employees</strong> whose salary is computed using the 365-day factor, the basic 100% pay for all regular holidays and rest days is already integrated into their fixed monthly salary. Consequently, when a monthly-paid employee works 8 hours on a Regular Holiday, their payslip typically shows their regular monthly basic salary plus an <strong>additional +100% holiday premium</strong> (bringing total compensation for that day to 200%). Our calculator separates <strong>Estimated Regular Pay (100%)</strong> from <strong>Additional Holiday / Rest Day Pay</strong> so both daily-paid and monthly-paid workers can verify their payslips accurately.
+                For <strong>monthly-paid employees</strong> whose salary is computed using the 365-day factor, the basic 100% pay for all regular holidays and rest days is already integrated into their fixed monthly salary. Consequently, when a monthly-paid employee works 8 hours on a Regular Holiday, their payslip typically shows their regular monthly basic salary plus an <strong>additional +100% holiday premium</strong> (bringing total compensation for that day to 200%). Our calculator separates <strong>Estimated Regular Pay (100%)</strong> from <strong>Additional Holiday / Rest Day Pay</strong> so both daily-paid and monthly-paid workers can verify their payslips accurately. Note that under Presidential Decree No. 851 and the DOLE Handbook, statutory <a href="/13th-month-pay-calculator/" class="text-emerald-700 font-semibold hover:underline">13th month pay</a> is computed on basic salary earned and generally excludes overtime, holiday, rest day, and night shift premiums unless integrated by company policy or CBA.
               </p>
             </div>
 
@@ -1136,7 +1102,7 @@
                 <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-slate-300 text-xs text-slate-500 group-open:rotate-180 transition" aria-hidden="true">▼</span>
               </summary>
               <div class="mt-3 text-xs sm:text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3">
-                Under Republic Act No. 9504 and the TRAIN Law (RA 10963), <strong>Statutory Minimum Wage Earners (MWEs)</strong> are 100% exempt from income tax on their basic minimum wage as well as their overtime pay, holiday pay, night shift differential, and hazard pay. For employees earning above the statutory minimum wage, overtime, holiday, and night shift pay form part of gross taxable compensation subject to graduated BIR withholding tax tables.
+                Under Republic Act No. 9504 and the TRAIN Law (RA 10963), <strong>Statutory Minimum Wage Earners (MWEs)</strong> are 100% exempt from income tax on their basic minimum wage as well as their overtime pay, holiday pay, night shift differential, and hazard pay. For employees earning above the statutory minimum wage, overtime, holiday, and night shift pay form part of gross taxable compensation subject to graduated BIR withholding tax tables. To see how your monthly salary, BIR withholding tax, and mandatory contributions—such as the <a href="/sss-contribution-table-2026/" class="text-emerald-700 font-semibold hover:underline">SSS Contribution Table 2026</a>, <a href="/philhealth-contribution-calculator/" class="text-emerald-700 font-semibold hover:underline">PhilHealth Contribution Calculator</a>, and <a href="/pagibig-mp2-savings-estimator/" class="text-emerald-700 font-semibold hover:underline">Pag-IBIG MP2 Savings Estimator</a>—affect your net pay, use our <a href="/take-home-pay-calculator-philippines/" class="text-emerald-700 font-semibold hover:underline">Take-Home Pay Calculator</a>.
               </div>
             </details>
           </div>
@@ -1147,6 +1113,9 @@
           <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 border-b border-slate-100 pb-3">
             6. Official Philippine Legal Sources &amp; Methodology
           </h2>
+          <p class="mt-3 text-xs sm:text-sm text-slate-700 leading-relaxed">
+            The multipliers and labor standards used in this calculator are based on published Philippine government issuances (see our complete <a href="/sources/" class="text-emerald-700 font-semibold hover:underline">Official Sources &amp; References</a>):
+          </p>
           <ul class="list-disc pl-6 space-y-2 text-xs sm:text-sm text-slate-700 mt-3">
             <li>
               <strong>Department of Labor and Employment (DOLE) — Bureau of Working Conditions (BWC):</strong>
@@ -1164,10 +1133,119 @@
           </ul>
 
           <div class="mt-6 p-4 rounded-xl bg-slate-100/80 border border-slate-200 text-xs text-slate-600 space-y-1.5">
-            <p><strong>Last Verified Date:</strong> October 2026.</p>
+            <p><strong>Basis of Information:</strong> Prepared using publicly available government references and documented calculation assumptions.</p>
             <p>
-              <strong>Informational Disclaimer:</strong> SuweldoTools is an independent computational utility and is <em>not affiliated with or endorsed by the Department of Labor and Employment (DOLE)</em>. Calculations provide informational estimates based on statutory Philippine labor standards and do not constitute formal legal or payroll advice.
+              <strong>Informational Disclaimer:</strong> SuweldoTools is an independent computational utility and is <em>not affiliated with or endorsed by the Department of Labor and Employment (DOLE)</em>. Calculations provide informational estimates based on statutory Philippine labor standards and do not constitute formal legal or payroll advice. Please review our <a href="/disclaimer/" class="text-emerald-700 font-semibold hover:underline">full disclaimer</a> for important limitations and payslip variance factors.
             </p>
+          </div>
+        </section>
+
+        <!-- Explore Other SuweldoTools Utilities -->
+        <section class="not-prose pt-6 border-t border-slate-200" aria-labelledby="related-calculators-heading">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+            <h2 id="related-calculators-heading" class="text-lg font-bold text-slate-900">
+              Explore Other SuweldoTools Utilities
+            </h2>
+            <a href="/calculators/" class="text-xs sm:text-sm font-semibold text-emerald-700 hover:text-emerald-800 underline">
+              View All Payroll Calculators &rarr;
+            </a>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <a
+              href="/take-home-pay-calculator-philippines/"
+              class="block rounded-xl border border-slate-200 bg-white p-5 hover:border-emerald-500 hover:shadow-sm transition-smooth group"
+            >
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Flagship Calculator</span>
+                <span class="text-emerald-600 group-hover:translate-x-1 transition-transform">&rarr;</span>
+              </div>
+              <h3 class="text-base font-bold text-slate-900 mt-1 group-hover:text-emerald-700 transition">
+                Take-Home Pay Calculator Philippines 2026
+              </h3>
+              <p class="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
+                Calculate your complete net sahod after SSS, PhilHealth (5%), Pag-IBIG (₱200 cap), and BIR TRAIN withholding tax.
+              </p>
+            </a>
+
+            <a
+              href="/13th-month-pay-calculator/"
+              class="block rounded-xl border border-slate-200 bg-white p-5 hover:border-emerald-500 hover:shadow-sm transition-smooth group"
+            >
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">DOLE Compliant</span>
+                <span class="text-emerald-600 group-hover:translate-x-1 transition-transform">&rarr;</span>
+              </div>
+              <h3 class="text-base font-bold text-slate-900 mt-1 group-hover:text-emerald-700 transition">
+                13th Month Pay Calculator Philippines
+              </h3>
+              <p class="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
+                Compute your statutory DOLE 13th month pay with prorated partial-year months, salary increases, and the ₱90,000 tax ceiling.
+              </p>
+            </a>
+
+            <a
+              href="/sss-contribution-table-2026/"
+              class="block rounded-xl border border-slate-200 bg-white p-5 hover:border-emerald-500 hover:shadow-sm transition-smooth group"
+            >
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">SSS Reference</span>
+                <span class="text-emerald-600 group-hover:translate-x-1 transition-transform">&rarr;</span>
+              </div>
+              <h3 class="text-base font-bold text-slate-900 mt-1 group-hover:text-emerald-700 transition">
+                SSS Contribution Table 2026
+              </h3>
+              <p class="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
+                Look up Monthly Salary Credit (MSC) brackets, employee shares, employer shares, and WISP contributions.
+              </p>
+            </a>
+
+            <a
+              href="/philhealth-contribution-calculator/"
+              class="block rounded-xl border border-slate-200 bg-white p-5 hover:border-emerald-500 hover:shadow-sm transition-smooth group"
+            >
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Universal Health Care</span>
+                <span class="text-emerald-600 group-hover:translate-x-1 transition-transform">&rarr;</span>
+              </div>
+              <h3 class="text-base font-bold text-slate-900 mt-1 group-hover:text-emerald-700 transition">
+                PhilHealth Contribution Calculator
+              </h3>
+              <p class="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
+                Estimate your monthly PhilHealth premium, equal employee and employer share split, and applicable salary floor and ceiling.
+              </p>
+            </a>
+
+            <a
+              href="/pagibig-mp2-savings-estimator/"
+              class="block rounded-xl border border-slate-200 bg-white p-5 hover:border-emerald-500 hover:shadow-sm transition-smooth group"
+            >
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Voluntary Savings &amp; HDMF</span>
+                <span class="text-emerald-600 group-hover:translate-x-1 transition-transform">&rarr;</span>
+              </div>
+              <h3 class="text-base font-bold text-slate-900 mt-1 group-hover:text-emerald-700 transition">
+                Pag-IBIG &amp; MP2 Savings Estimator
+              </h3>
+              <p class="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
+                Compare mandatory Pag-IBIG I payroll contributions with voluntary Pag-IBIG MP2 savings and five-year dividend projections.
+              </p>
+            </a>
+
+            <a
+              href="/calculators/"
+              class="block rounded-xl border border-slate-200 bg-white p-5 hover:border-emerald-500 hover:shadow-sm transition-smooth group"
+            >
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">All Utilities &amp; Directory</span>
+                <span class="text-emerald-600 group-hover:translate-x-1 transition-transform">&rarr;</span>
+              </div>
+              <h3 class="text-base font-bold text-slate-900 mt-1 group-hover:text-emerald-700 transition">
+                Explore All Calculators
+              </h3>
+              <p class="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
+                Browse the complete directory of Philippine payroll, SSS, Pag-IBIG MP2, and tax tools.
+              </p>
+            </a>
           </div>
         </section>
       </article>
@@ -1176,9 +1254,9 @@
     <!-- Footer Component -->
     <footer class="mt-12 sm:mt-16 border-t border-slate-200 bg-white text-slate-600 text-sm">
       <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-        <div class="grid grid-cols-2 md:grid-cols-12 gap-x-6 gap-y-6 lg:gap-x-8 pb-8 border-b border-slate-100">
+        <div class="grid grid-cols-2 lg:grid-cols-12 gap-x-6 gap-y-6 lg:gap-x-8 pb-8 border-b border-slate-100">
           <!-- Brand Section -->
-          <div class="col-span-2 md:col-span-5 space-y-3">
+          <div class="col-span-2 lg:col-span-3 space-y-3">
             <a href="/" class="inline-flex items-center gap-2.5 group rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2">
               <img
                 src="/assets/aistudio/suweldotools-logo-icon_7c91e4ab.svg"
@@ -1188,7 +1266,7 @@
               <span class="font-bold text-slate-900 text-base group-hover:text-emerald-700 transition">SuweldoTools</span>
             </a>
             <p class="text-xs sm:text-sm text-slate-500 max-w-sm leading-relaxed mt-1">
-              Fast, accurate, mobile-friendly salary tools and statutory contribution calculators for Filipino employees, freelancers, and HR professionals.
+              Helping Filipinos understand their salary, calculate take-home pay, and estimate government contributions with free, easy-to-use payroll calculators.
             </p>
             <p class="text-xs text-slate-400">
               Domain: <a href="https://suweldotools.com/" class="text-slate-500 hover:text-emerald-700 hover:underline transition rounded-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">suweldotools.com</a>
@@ -1196,8 +1274,8 @@
           </div>
 
           <!-- Tools Section -->
-          <div class="col-span-1 md:col-span-3 space-y-3">
-            <p class="font-bold text-xs uppercase tracking-wider text-slate-900">Salary Tools</p>
+          <div class="col-span-1 lg:col-span-3 space-y-3">
+            <p class="font-bold text-xs uppercase tracking-wider text-slate-900">All Calculators</p>
             <ul class="space-y-2.5 text-xs sm:text-sm">
               <li>
                 <a href="/take-home-pay-calculator-philippines/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Take-Home Pay Calculator</a>
@@ -1206,19 +1284,25 @@
                 <a href="/13th-month-pay-calculator/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">13th Month Pay Calculator</a>
               </li>
               <li>
-                <a href="/overtime-holiday-pay-calculator-philippines/" class="text-emerald-700 font-semibold hover:text-emerald-800 transition" aria-current="page">Overtime &amp; Holiday Pay Calculator</a>
-              </li>
-              <li>
                 <a href="/sss-contribution-table-2026/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">SSS Contribution Table 2026</a>
               </li>
               <li>
                 <a href="/philhealth-contribution-calculator/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">PhilHealth Contribution Calculator</a>
               </li>
+              <li>
+                <a href="/overtime-holiday-pay-calculator-philippines/" class="text-emerald-700 font-semibold hover:underline transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1" aria-current="page">Overtime &amp; Holiday Pay Calculator</a>
+              </li>
+              <li>
+                <a href="/pagibig-mp2-savings-estimator/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Pag-IBIG &amp; MP2 Savings Estimator</a>
+              </li>
+              <li>
+                <a href="/final-pay-calculator-philippines/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Final Pay Calculator</a>
+              </li>
             </ul>
           </div>
 
           <!-- Company Section -->
-          <div class="col-span-1 md:col-span-2 space-y-3">
+          <div class="col-span-1 lg:col-span-2 space-y-3">
             <p class="font-bold text-xs uppercase tracking-wider text-slate-900">Company</p>
             <ul class="space-y-2.5 text-xs sm:text-sm">
               <li>
@@ -1233,8 +1317,24 @@
             </ul>
           </div>
 
+          <!-- Resources Section -->
+          <div class="col-span-1 lg:col-span-2 space-y-3">
+            <p class="font-bold text-xs uppercase tracking-wider text-slate-900">Resources</p>
+            <ul class="space-y-2.5 text-xs sm:text-sm">
+              <li>
+                <a href="/sources/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Official Sources &amp; References</a>
+              </li>
+              <li>
+                <a href="/editorial-policy/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Editorial Policy</a>
+              </li>
+              <li>
+                <a href="/corrections-policy/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Corrections Policy</a>
+              </li>
+            </ul>
+          </div>
+
           <!-- Legal Section -->
-          <div class="col-span-2 md:col-span-2 space-y-3">
+          <div class="col-span-1 lg:col-span-2 space-y-3">
             <p class="font-bold text-xs uppercase tracking-wider text-slate-900">Legal</p>
             <ul class="space-y-2.5 text-xs sm:text-sm">
               <li>
@@ -1287,7 +1387,7 @@
               </svg>
             </a>
             <a
-              href="https://pin.it/4fRe9WNxE"
+              href="https://www.pinterest.com/suweldotools/"
               target="_blank"
               rel="noopener noreferrer"
               class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#E60023] text-white shadow-xs transition-all duration-200 motion-safe:hover:-translate-y-0.5 hover:bg-[#cc001f] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E60023] focus-visible:ring-offset-2"

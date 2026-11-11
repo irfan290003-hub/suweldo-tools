@@ -5,8 +5,8 @@
  *
  * Grounded in statutory Philippine laws:
  * - Republic Act No. 11199 (The Social Security Act of 2018) § 4(a)(1)
- * - SSS Circular No. 2024-006 (Schedule of SSS Contributions for All Business Employers and Employees Effective January 2025, applicable in 2026)
- * - Presidential Decree No. 626 & ECC Executive Order No. 33 (Employees' Compensation Program)
+ * - Published SSS contribution schedules (15% contribution rate, ₱5,000 to ₱35,000 MSC, effective January 2025 and applicable in 2026)
+ * - Presidential Decree No. 626 (as amended), ECC Board Resolution No. 14-10-33 & SSS Employees' Compensation Program schedule
  */
 
 (function () {
@@ -39,10 +39,14 @@
    * Currency formatter (PHP)
    */
   function formatPHP(amount) {
-    if (isNaN(amount) || amount === null || amount === undefined) {
+    if (amount === null || amount === undefined || typeof amount === 'boolean') {
       return '₱0.00';
     }
-    return '₱' + Number(amount).toLocaleString('en-PH', {
+    const num = Number(amount);
+    if (!Number.isFinite(num)) {
+      return '₱0.00';
+    }
+    return '₱' + num.toLocaleString('en-PH', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
@@ -52,13 +56,33 @@
    * Formats a number with comma separators (no peso sign)
    */
   function formatNumber(amount) {
-    if (isNaN(amount) || amount === null || amount === undefined) {
+    if (amount === null || amount === undefined || typeof amount === 'boolean') {
       return '0.00';
     }
-    return Number(amount).toLocaleString('en-PH', {
+    const num = Number(amount);
+    if (!Number.isFinite(num)) {
+      return '0.00';
+    }
+    return num.toLocaleString('en-PH', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     });
+  }
+
+  /**
+   * Safe salary parser that rejects non-finite, boolean, and empty values,
+   * while stripping comma separators and whitespace.
+   */
+  function parseCleanSalary(val) {
+    if (val === null || val === undefined || typeof val === 'boolean') {
+      return NaN;
+    }
+    const cleaned = String(val).replace(/,/g, '').trim();
+    if (cleaned === '') {
+      return NaN;
+    }
+    const num = Number(cleaned);
+    return Number.isFinite(num) ? num : NaN;
   }
 
   /**
@@ -140,8 +164,7 @@
    * Find tier corresponding to a monthly basic salary
    */
   function findTierForSalary(salary) {
-    if (salary === '' || salary === null || salary === undefined) return null;
-    const num = Number(salary);
+    const num = parseCleanSalary(salary);
     if (isNaN(num) || num <= 0) return null;
 
     if (num < SSS_CONFIG.salaryFloorThreshold) {
@@ -213,6 +236,7 @@
       // Empty input state
       if (rawStr === '') {
         currentActiveTier = null;
+        highlightRowInTable(null, false);
         if (outMsc) outMsc.textContent = '₱0.00';
         if (outRange) outRange.textContent = isTl ? 'Ilagay ang buwanang sahod upang makita ang bracket' : 'Enter monthly salary to look up';
         if (outTotalEE) outTotalEE.textContent = '₱0.00';
@@ -233,11 +257,12 @@
         return;
       }
 
-      const num = Number(rawStr);
+      const num = parseCleanSalary(salaryVal);
 
       // Non-numeric or negative input state
       if (isNaN(num) || num < 0) {
         currentActiveTier = null;
+        highlightRowInTable(null, false);
         if (outMsc) outMsc.textContent = '₱0.00';
         if (outRange) outRange.textContent = isTl ? 'Hindi wastong sahod (dapat positibong halaga)' : 'Invalid salary (must be a positive amount)';
         if (outTotalEE) outTotalEE.textContent = '₱0.00';
@@ -261,6 +286,7 @@
       // Zero salary state
       if (num === 0) {
         currentActiveTier = null;
+        highlightRowInTable(null, false);
         if (outMsc) outMsc.textContent = '₱0.00';
         if (outRange) outRange.textContent = isTl ? '₱0.00 (Walang sahod / walang kaltas)' : '₱0.00 (No compensation / no deductions)';
         if (outTotalEE) outTotalEE.textContent = '₱0.00';
@@ -348,7 +374,7 @@
     /**
      * Highlights the selected tier row in the table
      */
-    function highlightRowInTable(msc) {
+    function highlightRowInTable(msc, shouldScroll) {
       if (!tableBody) return;
 
       const rows = tableBody.querySelectorAll('tr[data-msc]');
@@ -366,7 +392,7 @@
         }
       });
 
-      if (targetRow && tableContainer) {
+      if (shouldScroll && targetRow && tableContainer) {
         targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
@@ -511,7 +537,12 @@
     if (calculatorInputSection) {
       calculatorInputSection.addEventListener('focusin', function (e) {
         const target = e.target;
-        if (!target || target === calculateSssBtn) return;
+        if (
+          !target ||
+          target === calculateSssBtn ||
+          target === highlightInTableBtn ||
+          (target.closest && target.closest('[data-preset-salary]'))
+        ) return;
         ensureFocusedFieldUnobscured(target);
         setTimeout(function () {
           if (document.activeElement === target) {
@@ -524,7 +555,14 @@
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', function () {
         const active = document.activeElement;
-        if (active && calculatorInputSection && calculatorInputSection.contains(active) && active !== calculateSssBtn) {
+        if (
+          active &&
+          calculatorInputSection &&
+          calculatorInputSection.contains(active) &&
+          active !== calculateSssBtn &&
+          active !== highlightInTableBtn &&
+          !(active.closest && active.closest('[data-preset-salary]'))
+        ) {
           ensureFocusedFieldUnobscured(active);
         }
       });
@@ -536,7 +574,7 @@
         if (lookupSalaryInput) {
           lookupSalaryInput.value = '25000';
           updateLookup(25000);
-          highlightRowInTable(25000);
+          highlightRowInTable(25000, false);
         }
       });
     }
@@ -559,7 +597,7 @@
             if (tableSearchInput) tableSearchInput.value = '';
             filterTable();
           }
-          highlightRowInTable(currentActiveTier.msc);
+          highlightRowInTable(currentActiveTier.msc, true);
         }
       });
     }
@@ -571,7 +609,10 @@
         if (lookupSalaryInput && amount) {
           lookupSalaryInput.value = amount;
           updateLookup(parseFloat(amount));
-          highlightRowInTable(findTierForSalary(amount).msc);
+          const tier = findTierForSalary(amount);
+          if (tier) {
+            highlightRowInTable(tier.msc, false);
+          }
         }
       });
     });
@@ -645,6 +686,7 @@
     tiers: ALL_TIERS,
     findTierForSalary: findTierForSalary,
     formatPHP: formatPHP,
-    formatNumber: formatNumber
+    formatNumber: formatNumber,
+    parseCleanSalary: parseCleanSalary
   };
 })();

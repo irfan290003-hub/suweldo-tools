@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * SuweldoTools Announcement Build Verification Script
- * Validates that after 'npm run build':
+ * Validates that after 'bun run build':
  * 1. The announcement popup script chunk exists in dist/assets/
  * 2. All 22 public static pages (11 English + 11 Filipino) reference the announcement popup bundle
  * 3. Any generated blog posts reference the announcement popup
@@ -20,7 +20,7 @@ const distDir = path.resolve(rootDir, 'dist');
 console.log('--- SuweldoTools Announcement Build Verification ---');
 
 if (!fs.existsSync(distDir)) {
-  console.error('ERROR: dist/ directory does not exist. Please run npm run build first.');
+  console.error('ERROR: dist/ directory does not exist. Please run bun run build first.');
   process.exit(1);
 }
 

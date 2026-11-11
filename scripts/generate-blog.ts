@@ -19,6 +19,37 @@ const VALID_SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const PLACEHOLDER_URL = 'https://your-project-ref.supabase.co';
 const PLACEHOLDER_ANON_KEY = 'your-public-anon-or-publishable-key';
 
+export const DEFAULT_BLOG_AUTHOR_NAME = 'Mohammad Irfan';
+const MOHAMMAD_IRFAN_PERSON_ID = `${SITE_ORIGIN}/authors/mohammad-irfan/#person`;
+const MOHAMMAD_IRFAN_EN_PROFILE_PATH = '/authors/mohammad-irfan/';
+const MOHAMMAD_IRFAN_TL_PROFILE_PATH = '/tl/authors/mohammad-irfan/';
+const MOHAMMAD_IRFAN_CANONICAL_URL = `${SITE_ORIGIN}${MOHAMMAD_IRFAN_EN_PROFILE_PATH}`;
+const MOHAMMAD_IRFAN_TL_CANONICAL_URL = `${SITE_ORIGIN}${MOHAMMAD_IRFAN_TL_PROFILE_PATH}`;
+const MOHAMMAD_IRFAN_IMAGE_URL = `${SITE_ORIGIN}/assets/aistudio/mohammad_irfan_7a326ab4.webp`;
+const MOHAMMAD_IRFAN_JOB_TITLE = 'Founder & Website Developer';
+
+export function resolveBlogAuthorName(_rawAuthorName?: string | null): string {
+  return DEFAULT_BLOG_AUTHOR_NAME;
+}
+
+export function isMohammadIrfanAuthor(_rawAuthorName: string | null | undefined): boolean {
+  return true;
+}
+
+export function buildBlogAuthorJsonLd(
+  _customAuthorName?: string | null,
+  language: 'en' | 'tl' = 'en'
+): Record<string, unknown> {
+  return {
+    '@type': 'Person',
+    '@id': MOHAMMAD_IRFAN_PERSON_ID,
+    name: DEFAULT_BLOG_AUTHOR_NAME,
+    url: language === 'tl' ? MOHAMMAD_IRFAN_TL_CANONICAL_URL : MOHAMMAD_IRFAN_CANONICAL_URL,
+    jobTitle: MOHAMMAD_IRFAN_JOB_TITLE,
+    image: MOHAMMAD_IRFAN_IMAGE_URL,
+  };
+}
+
 export interface BlogFaqItem {
   question: string;
   answer: string;
@@ -38,6 +69,7 @@ export interface PublishedBlogPost {
   featured_image_alt: string | null;
   author_name?: string | null;
   faqs?: BlogFaqItem[] | null;
+  first_published_at?: string | null;
   published_at: string;
   created_at: string;
   updated_at: string;
@@ -102,27 +134,111 @@ export function serializeJsonLd(data: unknown, indentSpaces = 6): string {
     .join('\n');
 }
 
+const BARE_UUID_PATH_REGEX =
+  /(?:^|\/)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/?$/i;
+const SUPABASE_FEATURED_IMAGE_REGEX =
+  /^(?:https?:\/\/[^/]+)?\/?(?:storage\/v1\/object\/public\/[^/]+\/)?featured\/(\d{4})[-/](\d{2})\/([a-zA-Z0-9][a-zA-Z0-9._-]{0,199}\.(?:webp|png|jpe?g))$/i;
+const BRANDED_IMAGE_PATH_REGEX =
+  /^(?:https?:\/\/(?:www\.)?suweldotools\.com)?\/images\/(\d{4})\/(\d{2})\/([a-zA-Z0-9][a-zA-Z0-9._-]{0,199}\.(?:webp|png|jpe?g))$/i;
+
+function isValidImageYearMonth(year: string, month: string): boolean {
+  if (!/^\d{4}$/.test(year) || !/^(0[1-9]|1[0-2])$/.test(month)) {
+    return false;
+  }
+  const y = Number(year);
+  return y >= 2000 && y <= 2100;
+}
+
 /**
- * Validates that an image or resource URL is a safe http(s) URL or root-relative path.
+ * Validates and normalizes an image or resource URL:
+ * - Normalizes Supabase Storage `/featured/YYYY-MM/filename.ext` URLs to `https://suweldotools.com/images/YYYY/MM/filename.ext`.
+ * - Normalizes `/images/YYYY/MM/filename.ext` to `https://suweldotools.com/images/YYYY/MM/filename.ext`.
+ * - Rejects `blob:`, `data:`, stripped blob UUID remnants, path traversal (`..`), and malformed `/images/` paths.
+ * - Preserves other valid external HTTP(S) URLs and safe root-relative asset paths.
  */
 export function sanitizeHttpUrl(rawUrl: string | null | undefined): string | null {
-  if (!rawUrl) return null;
+  if (!rawUrl || typeof rawUrl !== 'string') return null;
   const trimmed = rawUrl.trim();
   if (!trimmed) return null;
 
-  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) {
+  const lower = trimmed.toLowerCase();
+  if (
+    lower.startsWith('blob:') ||
+    lower.startsWith('data:') ||
+    lower.startsWith('javascript:') ||
+    lower.startsWith('vbscript:') ||
+    trimmed.startsWith('//') ||
+    trimmed.includes('\\') ||
+    trimmed.includes('..') ||
+    /%2e/i.test(trimmed) ||
+    /%2f/i.test(trimmed) ||
+    /%5c/i.test(trimmed) ||
+    /%00/i.test(trimmed) ||
+    /[\x00-\x1f\x7f]/.test(trimmed)
+  ) {
+    return null;
+  }
+
+  const pathWithoutQuery = trimmed.split(/[?#]/)[0];
+  if (BARE_UUID_PATH_REGEX.test(pathWithoutQuery)) {
+    return null;
+  }
+
+  // Normalize Supabase featured image URLs -> https://suweldotools.com/images/YYYY/MM/filename.ext
+  const supabaseFeaturedMatch = SUPABASE_FEATURED_IMAGE_REGEX.exec(trimmed);
+  if (supabaseFeaturedMatch) {
+    const [, year, month, filename] = supabaseFeaturedMatch;
+    if (!isValidImageYearMonth(year, month)) {
+      return null;
+    }
+    return `${SITE_ORIGIN}/images/${year}/${month}/${filename}`;
+  }
+
+  // Validate and canonicalize branded /images/YYYY/MM/filename.ext URLs
+  if (
+    trimmed.startsWith('/images/') ||
+    trimmed === '/images' ||
+    /^https?:\/\/(?:www\.)?suweldotools\.com\/images(?:\/|$)/i.test(trimmed)
+  ) {
+    const brandedMatch = BRANDED_IMAGE_PATH_REGEX.exec(trimmed);
+    if (!brandedMatch) {
+      return null;
+    }
+    const [, year, month, filename] = brandedMatch;
+    if (!isValidImageYearMonth(year, month)) {
+      return null;
+    }
+    return `${SITE_ORIGIN}/images/${year}/${month}/${filename}`;
+  }
+
+  if (trimmed.startsWith('/')) {
+    if (trimmed.includes('//')) {
+      return null;
+    }
     return trimmed;
   }
 
   try {
     const parsed = new URL(trimmed);
-    if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
-      return parsed.toString();
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+      return null;
     }
+    if (BARE_UUID_PATH_REGEX.test(parsed.pathname)) {
+      return null;
+    }
+    if (/\.run\.app$/i.test(parsed.hostname) || parsed.hostname === 'localhost') {
+      const localBrandedMatch = /^\/images\/(\d{4})\/(\d{2})\/([a-zA-Z0-9][a-zA-Z0-9._-]{0,199}\.(?:webp|png|jpe?g))$/i.exec(
+        parsed.pathname
+      );
+      if (localBrandedMatch && isValidImageYearMonth(localBrandedMatch[1], localBrandedMatch[2])) {
+        return `${SITE_ORIGIN}/images/${localBrandedMatch[1]}/${localBrandedMatch[2]}/${localBrandedMatch[3]}`;
+      }
+      return null;
+    }
+    return parsed.toString();
   } catch {
     return null;
   }
-  return null;
 }
 
 /**
@@ -174,6 +290,76 @@ export function formatPublishedDate(
   };
 }
 
+export interface ResolvedArticleEditorialDates {
+  originalPublishedRaw: string;
+  originalPublishedIso: string;
+  originalPublishedDisplay: string;
+  updatedIso: string;
+  updatedDisplay: string;
+  effectiveModifiedIso: string;
+  effectiveModifiedDisplay: string;
+  isMeaningfullyUpdated: boolean;
+  headerPrefixLabel: string;
+  headerDateIso: string;
+  headerDateDisplay: string;
+}
+
+/**
+ * Resolves the editorial publication and update dates for a blog post:
+ * - `originalPublishedAt = post.first_published_at || post.published_at`
+ * - `isMeaningfullyUpdated = Boolean(originalPublishedAt && post.updated_at && Date.parse(post.updated_at) > Date.parse(originalPublishedAt))`
+ * - When `isMeaningfullyUpdated` is false, `effectiveModifiedIso` equals `originalPublishedIso` so minor edits do not advance `dateModified` or `article:modified_time`.
+ */
+export function resolveArticleEditorialDates(
+  post: Pick<PublishedBlogPost, 'language' | 'published_at' | 'updated_at' | 'first_published_at'>
+): ResolvedArticleEditorialDates {
+  const isTl = post.language === 'tl';
+  const originalPublishedRaw =
+    (typeof post.first_published_at === 'string' && post.first_published_at.trim()) ||
+    post.published_at;
+  const { iso: originalPublishedIso, display: originalPublishedDisplay } = formatPublishedDate(
+    originalPublishedRaw,
+    post.language
+  );
+
+  const origMs = Date.parse(originalPublishedRaw);
+  const updMs = post.updated_at ? Date.parse(post.updated_at) : Number.NaN;
+  const isMeaningfullyUpdated = Boolean(
+    originalPublishedRaw &&
+      post.updated_at &&
+      !Number.isNaN(origMs) &&
+      !Number.isNaN(updMs) &&
+      updMs > origMs
+  );
+
+  const { iso: rawUpdatedIso, display: rawUpdatedDisplay } = formatPublishedDate(
+    isMeaningfullyUpdated ? post.updated_at : originalPublishedRaw,
+    post.language
+  );
+
+  const headerPrefixLabel = isMeaningfullyUpdated
+    ? isTl
+      ? 'Huling Na-update'
+      : 'Last Updated'
+    : isTl
+      ? 'Inilathala'
+      : 'Published';
+
+  return {
+    originalPublishedRaw,
+    originalPublishedIso,
+    originalPublishedDisplay,
+    updatedIso: rawUpdatedIso,
+    updatedDisplay: rawUpdatedDisplay,
+    effectiveModifiedIso: isMeaningfullyUpdated ? rawUpdatedIso : originalPublishedIso,
+    effectiveModifiedDisplay: isMeaningfullyUpdated ? rawUpdatedDisplay : originalPublishedDisplay,
+    isMeaningfullyUpdated,
+    headerPrefixLabel,
+    headerDateIso: isMeaningfullyUpdated ? rawUpdatedIso : originalPublishedIso,
+    headerDateDisplay: isMeaningfullyUpdated ? rawUpdatedDisplay : originalPublishedDisplay,
+  };
+}
+
 /**
  * Explicit allowlist options for sanitize-html.
  * Allows necessary article tags, tables, lists, links, and inline text formatting.
@@ -187,6 +373,7 @@ export const ARTICLE_SANITIZER_OPTIONS: sanitizeHtml.IOptions = {
     'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'caption',
     'ul', 'ol', 'li',
     'a',
+    'nav',
     'code', 'pre', 'blockquote',
     'hr',
   ],
@@ -195,9 +382,10 @@ export const ARTICLE_SANITIZER_OPTIONS: sanitizeHtml.IOptions = {
     th: ['colspan', 'rowspan', 'scope', 'class'],
     td: ['colspan', 'rowspan', 'scope', 'class'],
     table: ['class'],
-    h2: ['class'],
-    h3: ['class'],
-    h4: ['class'],
+    h2: ['id', 'class'],
+    h3: ['id', 'class'],
+    h4: ['id', 'class'],
+    nav: ['id', 'class', 'aria-label'],
     p: ['class'],
     ul: ['class'],
     ol: ['class'],
@@ -227,31 +415,73 @@ export const ARTICLE_SANITIZER_OPTIONS: sanitizeHtml.IOptions = {
   },
 };
 
+const EDITORIAL_PLACEHOLDER_LINE_REGEX =
+  /^(?:last\s+updated|huling\s+na-update|published|inilathala)\s*:\s*\[[^\]]+\](?:\s*(?:·|\u00b7|•|\u2022|\||-)\s*(?:by|ni)\s+mohammad\s+irfan)?$/i;
+
+export function isEditorialPlaceholderBlock(rawBlock: string): boolean {
+  if (!rawBlock || typeof rawBlock !== 'string') return false;
+  const withoutComments = rawBlock.replace(/<!--[\s\S]*?-->/g, '').trim();
+  if (!withoutComments) return false;
+  const plainText = withoutComments
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&middot;|&#183;|&#xB7;/gi, '·')
+    .replace(/&bull;|&#8226;/gi, '•')
+    .replace(/&nbsp;|&#160;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return EDITORIAL_PLACEHOLDER_LINE_REGEX.test(plainText);
+}
+
+export function stripEditorialDatePlaceholders(rawContent: string): string {
+  const normalized = String(rawContent || '').replace(/\r\n?/g, '\n').trim();
+  if (!normalized) return '';
+  return normalized
+    .replace(
+      /<p\b[^>]*>\s*(?:<small\b[^>]*>\s*)?(?:Last\s+updated|Huling\s+na-update|Published|Inilathala)\s*:\s*(?:<time\b[^>]*>\s*)?\[[^\]]+\](?:\s*<\/time>)?(?:\s*(?:&middot;|&#183;|·|•|\||-)\s*(?:By|Ni)\s+Mohammad\s+Irfan)?(?:\s*<\/small>)?\s*<\/p>/gi,
+      ''
+    )
+    .trim();
+}
+
 /**
  * Safely renders article body content into semantic HTML headings, tables, lists,
  * links, and paragraphs. Supports both existing Markdown formatting and raw HTML
  * structures while strictly sanitizing output against XSS via sanitize-html.
  */
 export function renderSafeArticleContent(rawContent: string): string {
-  const normalized = String(rawContent || '').replace(/\r\n?/g, '\n').trim();
+  const cleanedRaw = stripEditorialDatePlaceholders(rawContent);
+  const normalized = String(cleanedRaw || '').replace(/\r\n?/g, '\n').trim();
   if (!normalized) {
     return '';
   }
 
-  // Protect double newlines inside multi-line HTML block tags (table, pre, blockquote, ul, ol)
+  // If a wrapper <section id="..."> or <div id="..."> immediately precedes an <h2|h3|h4> without an id,
+  // transfer the id onto the heading before unwrapping structural containers.
+  const withHeadingIds = normalized.replace(
+    /<(?:section|div)\b[^>]*?\bid=(["'])([^"']+)\1[^>]*>\s*<(h[2-4])(?![^>]*\bid=)(\b[^>]*)>/gi,
+    '<$3 id="$2"$4>'
+  );
+
+  // Protect double newlines inside multi-line HTML block tags (table, pre, blockquote, ul, ol, nav)
   // so they are not fragmented into broken paragraph chunks.
-  const protectedText = normalized.replace(
-    /<(table|pre|blockquote|ul|ol)\b[\s\S]*?<\/\1>/gi,
+  const protectedText = withHeadingIds.replace(
+    /<(table|pre|blockquote|ul|ol|nav)\b[\s\S]*?<\/\1>/gi,
     (match) => match.replace(/\n{2,}/g, '\uE000')
   );
 
   const blocks = protectedText
     .split(/\n{2,}/)
-    .map((block) => block.replace(/\uE000/g, '\n\n').trim())
-    .filter(Boolean);
+    .map((block) => block.replace(/\uE000/g, '\n\n').replace(/<!--[\s\S]*?-->/g, '').trim())
+    .filter((block) => Boolean(block) && !isEditorialPlaceholderBlock(block));
 
   const renderedBlocks = blocks.map((block) => {
-    const lines = block.split('\n').map((line) => line.trim());
+    const lines = block
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => !isEditorialPlaceholderBlock(line));
+    if (lines.length === 0) {
+      return '';
+    }
 
     // Single-line Markdown-style H2 / H3 / H4 headings
     if (lines.length === 1 && lines[0].startsWith('#### ')) {
@@ -322,8 +552,14 @@ export function renderSafeArticleContent(rawContent: string): string {
       return `<p class="text-base text-slate-700 leading-relaxed my-4">\n              ${pLines}\n            </p>\n            <ol class="list-decimal pl-5 space-y-2 text-slate-700 my-4">\n              ${listItems}\n            </ol>`;
     }
 
-    // Check if the block is already an HTML block element (starts with an allowed block tag)
-    const isHtmlBlock = /^\s*<(table|thead|tbody|tfoot|tr|th|td|caption|h[2-4]|ul|ol|li|p|blockquote|pre|hr)\b/i.test(block);
+    // Check if the block is already an HTML block element (starts with a block/structural tag, comment, or contains an HTML block element)
+    const isHtmlBlock =
+      /^\s*(?:<!--|<\/?(table|thead|tbody|tfoot|tr|th|td|caption|h[1-6]|ul|ol|li|p|blockquote|pre|hr|nav|div|section|article|figure|figcaption|header|footer|main|aside)\b)/i.test(
+        block
+      ) ||
+      /<(table|thead|tbody|tfoot|tr|th|td|caption|h[2-4]|ul|ol|li|p|blockquote|pre|hr|nav)\b/i.test(
+        block
+      );
     if (isHtmlBlock) {
       return block;
     }
@@ -367,12 +603,12 @@ function replaceBetweenMarkers(
 /**
  * Renders a single post card for the English or Filipino blog listing page.
  */
-function renderListingPostCard(post: PublishedBlogPost, language: 'en' | 'tl'): string {
+export function renderListingPostCard(post: PublishedBlogPost, language: 'en' | 'tl'): string {
   const basePath = language === 'tl' ? '/tl/blog' : '/blog';
   const articlePath = `${basePath}/${post.slug}/`;
   const categoryLabel = language === 'tl' ? 'Gabay sa Payroll' : 'Payroll Guide';
   const readMoreLabel = language === 'tl' ? 'Basahin ang Artikulo' : 'Read Article';
-  const { iso, display } = formatPublishedDate(post.published_at, language);
+  const editorialDates = resolveArticleEditorialDates(post);
 
   const safeImageUrl = sanitizeHttpUrl(post.featured_image_url);
   const safeImageAlt = escapeHtml(post.featured_image_alt || post.title);
@@ -396,7 +632,7 @@ ${imageSection ? `${imageSection}\n` : ''}            <div class="p-5 sm:p-6 fle
                 <div class="flex items-center gap-2 text-xs text-slate-500">
                   <span class="font-semibold uppercase tracking-wider text-emerald-700">${categoryLabel}</span>
                   <span aria-hidden="true">&middot;</span>
-                  <time datetime="${escapeHtml(iso)}">${escapeHtml(display)}</time>
+                  <time datetime="${escapeHtml(editorialDates.headerDateIso)}">${escapeHtml(editorialDates.headerDateDisplay)}</time>
                 </div>
                 <h3 class="text-lg font-bold text-slate-900 group-hover:text-emerald-700 transition leading-snug">
                   <a href="${articlePath}">${escapeHtml(post.title)}</a>
@@ -416,7 +652,7 @@ ${imageSection ? `${imageSection}\n` : ''}            <div class="p-5 sm:p-6 fle
 /**
  * Updates /blog/index.html or /tl/blog/index.html using deterministic markers.
  */
-function buildUpdatedListingHtml(
+export function buildUpdatedListingHtml(
   currentHtml: string,
   posts: PublishedBlogPost[],
   language: 'en' | 'tl'
@@ -436,6 +672,7 @@ function buildUpdatedListingHtml(
     const postUrl = `${blogUrl}${post.slug}/`;
     const safeImageUrl = sanitizeHttpUrl(post.featured_image_url);
     const customAuthorName = post.author_name?.trim() || '';
+    const editorialDates = resolveArticleEditorialDates(post);
     const entry: Record<string, unknown> = {
       '@type': 'BlogPosting',
       '@id': `${postUrl}#article`,
@@ -445,23 +682,9 @@ function buildUpdatedListingHtml(
       url: postUrl,
       mainEntityOfPage: postUrl,
       inLanguage,
-      datePublished: new Date(post.published_at).toISOString(),
-      dateModified: new Date(post.updated_at || post.published_at).toISOString(),
-      author: customAuthorName
-        ? {
-            '@type': 'Person',
-            name: customAuthorName,
-          }
-        : {
-            '@type': 'Organization',
-            '@id': `${SITE_ORIGIN}/#organization`,
-            name: 'SuweldoTools',
-            sameAs: [
-              'https://www.facebook.com/profile.php?id=61595908386922',
-              'https://www.instagram.com/suweldotools/',
-              'https://www.youtube.com/@suweldotools',
-            ],
-          },
+      datePublished: editorialDates.originalPublishedIso,
+      dateModified: editorialDates.effectiveModifiedIso,
+      author: buildBlogAuthorJsonLd(customAuthorName, language),
       publisher: {
         '@type': 'Organization',
         '@id': `${SITE_ORIGIN}/#organization`,
@@ -668,14 +891,11 @@ export function buildArticlePageHtml(
   const absoluteImageUrl = safeImageUrl ? toAbsoluteSiteUrl(safeImageUrl) : null;
   const safeImageAlt = post.featured_image_alt?.trim() || post.title;
 
-  const { iso: publishedIso, display: publishedDisplay } = formatPublishedDate(
-    post.published_at,
-    post.language
-  );
-  const { iso: updatedIso, display: updatedDisplay } = formatPublishedDate(
-    post.updated_at || post.published_at,
-    post.language
-  );
+  const editorialDates = resolveArticleEditorialDates(post);
+  const publishedIso = editorialDates.originalPublishedIso;
+  const publishedDisplay = editorialDates.originalPublishedDisplay;
+  const updatedIso = editorialDates.effectiveModifiedIso;
+  const updatedDisplay = editorialDates.effectiveModifiedDisplay;
 
   const defaultOgImageUrl = isTl
     ? `${SITE_ORIGIN}/og-image-tl.png`
@@ -703,8 +923,17 @@ export function buildArticlePageHtml(
     : '';
 
   const customAuthorName = post.author_name?.trim() || '';
-  const displayAuthorName = customAuthorName || 'SuweldoTools';
-  const visibleBylineText = isTl ? `Ni ${displayAuthorName}` : `By ${displayAuthorName}`;
+  const displayAuthorName = resolveBlogAuthorName(customAuthorName);
+  const authorProfileHref = isTl ? MOHAMMAD_IRFAN_TL_PROFILE_PATH : MOHAMMAD_IRFAN_EN_PROFILE_PATH;
+  const visibleBylineHtml = `${isTl ? 'Ni' : 'By'} <a href="${authorProfileHref}" rel="author" class="font-semibold text-emerald-700 hover:underline">${escapeHtml(displayAuthorName)}</a>`;
+  const headerEditorialMetaHtml = `<span>${escapeHtml(editorialDates.headerPrefixLabel)}: <time datetime="${escapeHtml(editorialDates.headerDateIso)}">${escapeHtml(editorialDates.headerDateDisplay)}</time></span>
+              <span aria-hidden="true">&middot;</span>
+              <span class="font-medium text-slate-700">${visibleBylineHtml}</span>`;
+  const footerEditorialMetaHtml = editorialDates.isMeaningfullyUpdated
+    ? isTl
+      ? `<span>Inilathala: <time datetime="${escapeHtml(publishedIso)}">${escapeHtml(publishedDisplay)}</time> &middot; Huling na-update: <time datetime="${escapeHtml(updatedIso)}">${escapeHtml(updatedDisplay)}</time></span>`
+      : `<span>Published: <time datetime="${escapeHtml(publishedIso)}">${escapeHtml(publishedDisplay)}</time> &middot; Last updated: <time datetime="${escapeHtml(updatedIso)}">${escapeHtml(updatedDisplay)}</time></span>`
+    : '';
   const validFaqs = normalizePublishedFaqs(post.faqs);
 
   const blogPostingJsonLd: Record<string, unknown> = {
@@ -721,22 +950,7 @@ export function buildArticlePageHtml(
     inLanguage: htmlLang,
     datePublished: publishedIso,
     dateModified: updatedIso,
-    author: customAuthorName
-      ? {
-          '@type': 'Person',
-          name: customAuthorName,
-        }
-      : {
-          '@type': 'Organization',
-          '@id': `${SITE_ORIGIN}/#organization`,
-          name: 'SuweldoTools',
-          url: `${SITE_ORIGIN}/`,
-          sameAs: [
-            'https://www.facebook.com/profile.php?id=61595908386922',
-            'https://www.instagram.com/suweldotools/',
-            'https://www.youtube.com/@suweldotools',
-          ],
-        },
+    author: buildBlogAuthorJsonLd(customAuthorName, post.language),
     publisher: {
       '@type': 'Organization',
       '@id': `${SITE_ORIGIN}/#organization`,
@@ -896,7 +1110,6 @@ ${GENERATOR_OWNERSHIP_MARKER}
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="google" content="notranslate" />
     <title>${escapeHtml(pageTitle)}</title>
     <meta
       name="description"
@@ -940,21 +1153,13 @@ ${hreflangLines.join('\n')}
 ${serializeJsonLd(jsonLdGraph, 6)}
     </script>
 
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-E3Z696ZY0J"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('set', 'allow_google_signals', false);
-      gtag('set', 'allow_ad_personalization_signals', false);
-      gtag('config', 'G-E3Z696ZY0J');
-    </script>
+    <!-- Cookie Consent & Strict GA4 Controller -->
+    <script src="/js/cookie-consent.js" defer></script>
   </head>
   <body class="min-h-full flex flex-col font-sans antialiased text-slate-800 bg-slate-50 selection:bg-emerald-100 selection:text-emerald-900">
     <!-- Header / Navigation Bar -->
     <header class="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur-md">
-      <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-3 sm:px-4 lg:px-4 xl:px-8 gap-2 sm:gap-3 xl:gap-4">
+      <div class="mx-auto flex h-16 lg:h-[74px] max-w-6xl items-center justify-between px-3 sm:px-4 lg:px-6 xl:px-8 gap-2 sm:gap-3 lg:gap-6 xl:gap-7">
         <a href="/tl/" class="flex items-center gap-2 sm:gap-2.5 group min-w-0 shrink-0">
           <img
             src="/assets/aistudio/suweldotools-logo-icon_7c91e4ab.svg"
@@ -965,34 +1170,25 @@ ${serializeJsonLd(jsonLdGraph, 6)}
           />
           <div class="flex flex-col min-w-0">
             <span class="text-base sm:text-lg font-bold tracking-tight text-slate-900 group-hover:text-emerald-700 transition leading-tight truncate">SuweldoTools</span>
-            <span class="hidden min-[360px]:block text-[9px] sm:text-[10px] uppercase font-semibold tracking-tight sm:tracking-wider text-slate-500 leading-tight truncate">Philippines Payroll Utilities</span>
+            <span class="hidden min-[360px]:block text-[9px] sm:text-[10px] uppercase font-semibold tracking-tight sm:tracking-wider text-slate-500 leading-tight truncate">Sahod Calculators ng Pilipinas</span>
           </div>
         </a>
 
-        <!-- Desktop Navigation (Hidden on all viewports for Filipino language) -->
-        <nav aria-label="Pangunahing nabigasyon" class="hidden">
-          <a href="/tl/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
+        <!-- Desktop Navigation -->
+        <nav aria-label="Pangunahing nabigasyon" class="hidden lg:flex lg:items-center lg:ml-auto lg:gap-5 xl:gap-6 text-sm font-medium text-slate-600">
+          <a href="/tl/" class="inline-flex items-center px-1 py-1.5 text-slate-600 hover:text-emerald-600 border-b-2 border-transparent hover:border-emerald-600/30 transition-colors duration-150 whitespace-nowrap">
             Home
           </a>
-          <a href="/tl/take-home-pay-calculator-philippines/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
-            Take-Home Pay
+          <a href="/tl/calculators/" class="inline-flex items-center px-1 py-1.5 text-slate-600 hover:text-emerald-600 border-b-2 border-transparent hover:border-emerald-600/30 transition-colors duration-150 whitespace-nowrap">
+            Calculators
           </a>
-          <a href="/tl/13th-month-pay-calculator/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
-            13th Month Pay
-          </a>
-          <a href="/tl/sss-contribution-table-2026/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
-            Talahanayan ng SSS 2026
-          </a>
-          <a href="/tl/philhealth-contribution-calculator/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
-            PhilHealth Contribution Calculator
-          </a>
-          <a href="/tl/blog/" class="py-1 text-emerald-600 font-semibold border-b-2 border-emerald-600 whitespace-nowrap" aria-current="page">
+          <a href="/tl/blog/" class="inline-flex items-center px-1 py-1.5 text-emerald-600 font-semibold border-b-2 border-emerald-600 whitespace-nowrap" aria-current="page">
             Blog
           </a>
-          <a href="/tl/about/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
+          <a href="/tl/about/" class="inline-flex items-center px-1 py-1.5 text-slate-600 hover:text-emerald-600 border-b-2 border-transparent hover:border-emerald-600/30 transition-colors duration-150 whitespace-nowrap">
             Tungkol sa Amin
           </a>
-          <a href="/tl/contact/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
+          <a href="/tl/contact/" class="inline-flex items-center px-1 py-1.5 text-slate-600 hover:text-emerald-600 border-b-2 border-transparent hover:border-emerald-600/30 transition-colors duration-150 whitespace-nowrap">
             Makipag-ugnayan
           </a>
         </nav>
@@ -1049,7 +1245,7 @@ ${serializeJsonLd(jsonLdGraph, 6)}
             aria-expanded="false"
             aria-controls="mobileNavigationPanel"
             aria-label="Buksan ang menu ng nabigasyon"
-            class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition cursor-pointer"
+            class="inline-flex lg:hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition cursor-pointer"
           >
             <svg id="mobile-menu-icon-open" data-menu-icon="open" data-mobile-menu-open-icon class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
@@ -1111,31 +1307,10 @@ ${serializeJsonLd(jsonLdGraph, 6)}
             <span class="text-xs text-slate-400">&rarr;</span>
           </a>
           <a
-            href="/tl/take-home-pay-calculator-philippines/"
+            href="/tl/calculators/"
             class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
           >
-            <span>Take-Home Pay</span>
-            <span class="text-xs text-slate-400">&rarr;</span>
-          </a>
-          <a
-            href="/tl/13th-month-pay-calculator/"
-            class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
-          >
-            <span>13th Month Pay</span>
-            <span class="text-xs text-slate-400">&rarr;</span>
-          </a>
-          <a
-            href="/tl/sss-contribution-table-2026/"
-            class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
-          >
-            <span>Talahanayan ng SSS 2026</span>
-            <span class="text-xs text-slate-400">&rarr;</span>
-          </a>
-          <a
-            href="/tl/philhealth-contribution-calculator/"
-            class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
-          >
-            <span>PhilHealth Contribution Calculator</span>
+            <span>Calculators</span>
             <span class="text-xs text-slate-400">&rarr;</span>
           </a>
           <a
@@ -1188,9 +1363,7 @@ ${serializeJsonLd(jsonLdGraph, 6)}
             <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
               <span class="font-semibold uppercase tracking-wider text-emerald-700">Gabay sa Payroll</span>
               <span aria-hidden="true">&middot;</span>
-              <time datetime="${escapeHtml(publishedIso)}">${escapeHtml(publishedDisplay)}</time>
-              <span aria-hidden="true">&middot;</span>
-              <span class="font-medium text-slate-700">${escapeHtml(visibleBylineText)}</span>
+              ${headerEditorialMetaHtml}
             </div>
 ${translationBannerHtml}
           </div>
@@ -1209,9 +1382,7 @@ ${featuredImageFigureHtml ? `${featuredImageFigureHtml}\n` : ''}        <div cla
         </div>
 
 ${faqSectionHtml}        <footer class="mt-10 pt-6 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-xs text-slate-500">
-          <div>
-            <span>Huling na-update: <time datetime="${escapeHtml(updatedIso)}">${escapeHtml(updatedDisplay)}</time></span>
-          </div>
+          <div>${footerEditorialMetaHtml ? `\n            ${footerEditorialMetaHtml}\n          ` : ''}</div>
           <a
             href="/tl/blog/"
             class="inline-flex items-center gap-1.5 font-semibold text-emerald-700 hover:underline"
@@ -1308,9 +1479,9 @@ ${faqSectionHtml}        <footer class="mt-10 pt-6 border-t border-slate-200 fle
     <!-- Footer Component -->
     <footer class="mt-12 sm:mt-16 border-t border-slate-200 bg-white text-slate-600 text-sm">
       <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-        <div class="grid grid-cols-2 md:grid-cols-12 gap-x-6 gap-y-6 lg:gap-x-8 pb-8 border-b border-slate-100">
+        <div class="grid grid-cols-2 lg:grid-cols-12 gap-x-6 gap-y-6 lg:gap-x-8 pb-8 border-b border-slate-100">
           <!-- Brand Section -->
-          <div class="col-span-2 md:col-span-5 space-y-3">
+          <div class="col-span-2 lg:col-span-3 space-y-3">
             <a href="/tl/" class="inline-flex items-center gap-2.5 group rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2">
               <img
                 src="/assets/aistudio/suweldotools-logo-icon_7c91e4ab.svg"
@@ -1320,7 +1491,7 @@ ${faqSectionHtml}        <footer class="mt-10 pt-6 border-t border-slate-200 fle
               <span class="font-bold text-slate-900 text-base group-hover:text-emerald-700 transition">SuweldoTools</span>
             </a>
             <p class="text-xs sm:text-sm text-slate-500 max-w-sm leading-relaxed mt-1">
-              Mabilis, tumpak, at mobile-friendly na mga salary tool at statutory contribution calculators para sa mga empleyadong Pilipino, freelancer, at HR professionals.
+              Tinutulungan ang mga Pilipino na maunawaan ang kanilang sahod, kuwentahin ang take-home pay, at tantyahin ang mga kontribusyon sa gobyerno gamit ang libre at madaling gamiting mga payroll calculator.
             </p>
             <p class="text-xs text-slate-400">
               Domain: <a href="https://suweldotools.com/tl/" class="text-slate-500 hover:text-emerald-700 hover:underline transition rounded-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">suweldotools.com</a>
@@ -1328,8 +1499,8 @@ ${faqSectionHtml}        <footer class="mt-10 pt-6 border-t border-slate-200 fle
           </div>
 
           <!-- Tools Section -->
-          <div class="col-span-1 md:col-span-3 space-y-3">
-            <p class="font-bold text-xs uppercase tracking-wider text-slate-900">Salary Tools</p>
+          <div class="col-span-1 lg:col-span-3 space-y-3">
+            <p class="font-bold text-xs uppercase tracking-wider text-slate-900">All Calculators</p>
             <ul class="space-y-2.5 text-xs sm:text-sm">
               <li>
                 <a href="/tl/take-home-pay-calculator-philippines/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Take-Home Pay Calculator</a>
@@ -1343,11 +1514,17 @@ ${faqSectionHtml}        <footer class="mt-10 pt-6 border-t border-slate-200 fle
               <li>
                 <a href="/tl/philhealth-contribution-calculator/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">PhilHealth Contribution Calculator</a>
               </li>
+              <li>
+                <a href="/tl/overtime-holiday-pay-calculator-philippines/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Overtime at Holiday Pay Calculator</a>
+              </li>
+              <li>
+                <a href="/tl/pagibig-mp2-savings-estimator/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Pag-IBIG at MP2 Savings Estimator</a>
+              </li>
             </ul>
           </div>
 
           <!-- Company Section -->
-          <div class="col-span-1 md:col-span-2 space-y-3">
+          <div class="col-span-1 lg:col-span-2 space-y-3">
             <p class="font-bold text-xs uppercase tracking-wider text-slate-900">Kumpanya</p>
             <ul class="space-y-2.5 text-xs sm:text-sm">
               <li>
@@ -1362,8 +1539,24 @@ ${faqSectionHtml}        <footer class="mt-10 pt-6 border-t border-slate-200 fle
             </ul>
           </div>
 
+          <!-- Resources Section -->
+          <div class="col-span-1 lg:col-span-2 space-y-3">
+            <p class="font-bold text-xs uppercase tracking-wider text-slate-900">Mga Sanggunian</p>
+            <ul class="space-y-2.5 text-xs sm:text-sm">
+              <li>
+                <a href="/tl/sources/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Mga Opisyal na Sanggunian</a>
+              </li>
+              <li>
+                <a href="/tl/editorial-policy/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Patakarang Editoryal</a>
+              </li>
+              <li>
+                <a href="/tl/corrections-policy/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Patakaran sa Pagwawasto</a>
+              </li>
+            </ul>
+          </div>
+
           <!-- Legal Section -->
-          <div class="col-span-2 md:col-span-2 space-y-3">
+          <div class="col-span-1 lg:col-span-2 space-y-3">
             <p class="font-bold text-xs uppercase tracking-wider text-slate-900">Legal</p>
             <ul class="space-y-2.5 text-xs sm:text-sm">
               <li>
@@ -1371,6 +1564,9 @@ ${faqSectionHtml}        <footer class="mt-10 pt-6 border-t border-slate-200 fle
               </li>
               <li>
                 <a href="/tl/disclaimer/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Disclaimer</a>
+              </li>
+              <li>
+                <button type="button" id="cookieSettingsFooterBtn" data-cookie-settings-trigger class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1 cursor-pointer text-left">Mga Setting ng Cookie</button>
               </li>
             </ul>
           </div>
@@ -1416,7 +1612,7 @@ ${faqSectionHtml}        <footer class="mt-10 pt-6 border-t border-slate-200 fle
               </svg>
             </a>
             <a
-              href="https://pin.it/4fRe9WNxE"
+              href="https://www.pinterest.com/suweldotools/"
               target="_blank"
               rel="noopener noreferrer"
               class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#E60023] text-white shadow-xs transition-all duration-200 motion-safe:hover:-translate-y-0.5 hover:bg-[#cc001f] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E60023] focus-visible:ring-offset-2"
@@ -1466,7 +1662,6 @@ ${GENERATOR_OWNERSHIP_MARKER}
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="google" content="notranslate" />
     <title>${escapeHtml(pageTitle)}</title>
     <meta
       name="description"
@@ -1510,21 +1705,13 @@ ${hreflangLines.join('\n')}
 ${serializeJsonLd(jsonLdGraph, 6)}
     </script>
 
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-E3Z696ZY0J"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('set', 'allow_google_signals', false);
-      gtag('set', 'allow_ad_personalization_signals', false);
-      gtag('config', 'G-E3Z696ZY0J');
-    </script>
+    <!-- Cookie Consent & Strict GA4 Controller -->
+    <script src="/js/cookie-consent.js" defer></script>
   </head>
   <body class="min-h-full flex flex-col font-sans antialiased text-slate-800 bg-slate-50 selection:bg-emerald-100 selection:text-emerald-900">
     <!-- Header / Navigation Bar -->
     <header class="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur-md">
-      <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-3 sm:px-4 lg:px-4 xl:px-8 gap-2 sm:gap-3 xl:gap-4">
+      <div class="mx-auto flex h-16 lg:h-[74px] max-w-6xl items-center justify-between px-3 sm:px-4 lg:px-6 xl:px-8 gap-2 sm:gap-3 lg:gap-6 xl:gap-7">
         <a href="/" class="flex items-center gap-2 sm:gap-2.5 group min-w-0 shrink-0">
           <img
             src="/assets/aistudio/suweldotools-logo-icon_7c91e4ab.svg"
@@ -1535,34 +1722,25 @@ ${serializeJsonLd(jsonLdGraph, 6)}
           />
           <div class="flex flex-col min-w-0">
             <span class="text-base sm:text-lg font-bold tracking-tight text-slate-900 group-hover:text-emerald-700 transition leading-tight truncate">SuweldoTools</span>
-            <span class="hidden min-[360px]:block text-[9px] sm:text-[10px] uppercase font-semibold tracking-tight sm:tracking-wider text-slate-500 leading-tight truncate">Philippines Payroll Utilities</span>
+            <span class="hidden min-[360px]:block text-[9px] sm:text-[10px] uppercase font-semibold tracking-tight sm:tracking-wider text-slate-500 leading-tight truncate">Philippine Salary Calculators</span>
           </div>
         </a>
 
-        <!-- Desktop Navigation (Hidden on all viewports) -->
-        <nav aria-label="Main navigation" class="hidden">
-          <a href="/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
+        <!-- Desktop Navigation -->
+        <nav aria-label="Main navigation" class="hidden lg:flex lg:items-center lg:ml-auto lg:gap-5 xl:gap-6 text-sm font-medium text-slate-600">
+          <a href="/" class="inline-flex items-center px-1 py-1.5 text-slate-600 hover:text-emerald-600 border-b-2 border-transparent hover:border-emerald-600/30 transition-colors duration-150 whitespace-nowrap">
             Home
           </a>
-          <a href="/take-home-pay-calculator-philippines/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
-            Take-Home Pay
+          <a href="/calculators/" class="inline-flex items-center px-1 py-1.5 text-slate-600 hover:text-emerald-600 border-b-2 border-transparent hover:border-emerald-600/30 transition-colors duration-150 whitespace-nowrap">
+            Calculators
           </a>
-          <a href="/13th-month-pay-calculator/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
-            13th Month Pay
-          </a>
-          <a href="/sss-contribution-table-2026/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
-            SSS Table 2026
-          </a>
-          <a href="/philhealth-contribution-calculator/" class="text-[11px] lg:text-xs xl:text-[13px] tracking-tight py-1 hover:text-emerald-600 transition whitespace-nowrap">
-            PhilHealth Contribution Calculator
-          </a>
-          <a href="/blog/" class="py-1 text-emerald-600 font-semibold border-b-2 border-emerald-600 whitespace-nowrap" aria-current="page">
+          <a href="/blog/" class="inline-flex items-center px-1 py-1.5 text-emerald-600 font-semibold border-b-2 border-emerald-600 whitespace-nowrap" aria-current="page">
             Blog
           </a>
-          <a href="/about/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
+          <a href="/about/" class="inline-flex items-center px-1 py-1.5 text-slate-600 hover:text-emerald-600 border-b-2 border-transparent hover:border-emerald-600/30 transition-colors duration-150 whitespace-nowrap">
             About
           </a>
-          <a href="/contact/" class="py-1 hover:text-emerald-600 transition whitespace-nowrap">
+          <a href="/contact/" class="inline-flex items-center px-1 py-1.5 text-slate-600 hover:text-emerald-600 border-b-2 border-transparent hover:border-emerald-600/30 transition-colors duration-150 whitespace-nowrap">
             Contact
           </a>
         </nav>
@@ -1619,7 +1797,7 @@ ${serializeJsonLd(jsonLdGraph, 6)}
             aria-expanded="false"
             aria-controls="mobileNavigationPanel"
             aria-label="Open navigation menu"
-            class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition cursor-pointer"
+            class="inline-flex lg:hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-emerald-700 transition cursor-pointer"
           >
             <svg id="mobile-menu-icon-open" data-menu-icon="open" data-mobile-menu-open-icon class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
@@ -1681,31 +1859,10 @@ ${serializeJsonLd(jsonLdGraph, 6)}
             <span class="text-xs text-slate-400">&rarr;</span>
           </a>
           <a
-            href="/take-home-pay-calculator-philippines/"
+            href="/calculators/"
             class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
           >
-            <span>Take-Home Pay</span>
-            <span class="text-xs text-slate-400">&rarr;</span>
-          </a>
-          <a
-            href="/13th-month-pay-calculator/"
-            class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
-          >
-            <span>13th Month Pay</span>
-            <span class="text-xs text-slate-400">&rarr;</span>
-          </a>
-          <a
-            href="/sss-contribution-table-2026/"
-            class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
-          >
-            <span>SSS Table 2026</span>
-            <span class="text-xs text-slate-400">&rarr;</span>
-          </a>
-          <a
-            href="/philhealth-contribution-calculator/"
-            class="flex min-h-[44px] items-center justify-between rounded-xl px-3.5 py-3 text-sm font-semibold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition"
-          >
-            <span>PhilHealth Contribution Calculator</span>
+            <span>Calculators</span>
             <span class="text-xs text-slate-400">&rarr;</span>
           </a>
           <a
@@ -1758,9 +1915,7 @@ ${serializeJsonLd(jsonLdGraph, 6)}
             <div class="flex flex-wrap items-center gap-2 text-xs text-slate-500">
               <span class="font-semibold uppercase tracking-wider text-emerald-700">Payroll Guide</span>
               <span aria-hidden="true">&middot;</span>
-              <time datetime="${escapeHtml(publishedIso)}">${escapeHtml(publishedDisplay)}</time>
-              <span aria-hidden="true">&middot;</span>
-              <span class="font-medium text-slate-700">${escapeHtml(visibleBylineText)}</span>
+              ${headerEditorialMetaHtml}
             </div>
 ${translationBannerHtml}
           </div>
@@ -1779,9 +1934,7 @@ ${featuredImageFigureHtml ? `${featuredImageFigureHtml}\n` : ''}        <div cla
         </div>
 
 ${faqSectionHtml}        <footer class="mt-10 pt-6 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 text-xs text-slate-500">
-          <div>
-            <span>Last updated: <time datetime="${escapeHtml(updatedIso)}">${escapeHtml(updatedDisplay)}</time></span>
-          </div>
+          <div>${footerEditorialMetaHtml ? `\n            ${footerEditorialMetaHtml}\n          ` : ''}</div>
           <a
             href="/blog/"
             class="inline-flex items-center gap-1.5 font-semibold text-emerald-700 hover:underline"
@@ -1799,7 +1952,7 @@ ${faqSectionHtml}        <footer class="mt-10 pt-6 border-t border-slate-200 fle
             Explore Our Free 2026 Philippine Payroll Calculators
           </h2>
           <p class="text-xs sm:text-sm text-slate-600 mt-1">
-            Need an immediate computation? Use our verified, client-side calculators below.
+            Need an immediate computation? Use our free, easy-to-use calculators below.
           </p>
         </div>
 
@@ -1878,9 +2031,9 @@ ${faqSectionHtml}        <footer class="mt-10 pt-6 border-t border-slate-200 fle
     <!-- Footer Component -->
     <footer class="mt-12 sm:mt-16 border-t border-slate-200 bg-white text-slate-600 text-sm">
       <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-        <div class="grid grid-cols-2 md:grid-cols-12 gap-x-6 gap-y-6 lg:gap-x-8 pb-8 border-b border-slate-100">
+        <div class="grid grid-cols-2 lg:grid-cols-12 gap-x-6 gap-y-6 lg:gap-x-8 pb-8 border-b border-slate-100">
           <!-- Brand Section -->
-          <div class="col-span-2 md:col-span-5 space-y-3">
+          <div class="col-span-2 lg:col-span-3 space-y-3">
             <a href="/" class="inline-flex items-center gap-2.5 group rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2">
               <img
                 src="/assets/aistudio/suweldotools-logo-icon_7c91e4ab.svg"
@@ -1890,7 +2043,7 @@ ${faqSectionHtml}        <footer class="mt-10 pt-6 border-t border-slate-200 fle
               <span class="font-bold text-slate-900 text-base group-hover:text-emerald-700 transition">SuweldoTools</span>
             </a>
             <p class="text-xs sm:text-sm text-slate-500 max-w-sm leading-relaxed mt-1">
-              Fast, accurate, mobile-friendly salary tools and statutory contribution calculators for Filipino employees, freelancers, and HR professionals.
+              Helping Filipinos understand their salary, calculate take-home pay, and estimate government contributions with free, easy-to-use payroll calculators.
             </p>
             <p class="text-xs text-slate-400">
               Domain: <a href="https://suweldotools.com/" class="text-slate-500 hover:text-emerald-700 hover:underline transition rounded-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">suweldotools.com</a>
@@ -1898,8 +2051,8 @@ ${faqSectionHtml}        <footer class="mt-10 pt-6 border-t border-slate-200 fle
           </div>
 
           <!-- Tools Section -->
-          <div class="col-span-1 md:col-span-3 space-y-3">
-            <p class="font-bold text-xs uppercase tracking-wider text-slate-900">Salary Tools</p>
+          <div class="col-span-1 lg:col-span-3 space-y-3">
+            <p class="font-bold text-xs uppercase tracking-wider text-slate-900">All Calculators</p>
             <ul class="space-y-2.5 text-xs sm:text-sm">
               <li>
                 <a href="/take-home-pay-calculator-philippines/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Take-Home Pay Calculator</a>
@@ -1913,11 +2066,17 @@ ${faqSectionHtml}        <footer class="mt-10 pt-6 border-t border-slate-200 fle
               <li>
                 <a href="/philhealth-contribution-calculator/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">PhilHealth Contribution Calculator</a>
               </li>
+              <li>
+                <a href="/overtime-holiday-pay-calculator-philippines/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Overtime &amp; Holiday Pay Calculator</a>
+              </li>
+              <li>
+                <a href="/pagibig-mp2-savings-estimator/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Pag-IBIG &amp; MP2 Savings Estimator</a>
+              </li>
             </ul>
           </div>
 
           <!-- Company Section -->
-          <div class="col-span-1 md:col-span-2 space-y-3">
+          <div class="col-span-1 lg:col-span-2 space-y-3">
             <p class="font-bold text-xs uppercase tracking-wider text-slate-900">Company</p>
             <ul class="space-y-2.5 text-xs sm:text-sm">
               <li>
@@ -1932,8 +2091,24 @@ ${faqSectionHtml}        <footer class="mt-10 pt-6 border-t border-slate-200 fle
             </ul>
           </div>
 
+          <!-- Resources Section -->
+          <div class="col-span-1 lg:col-span-2 space-y-3">
+            <p class="font-bold text-xs uppercase tracking-wider text-slate-900">Resources</p>
+            <ul class="space-y-2.5 text-xs sm:text-sm">
+              <li>
+                <a href="/sources/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Official Sources &amp; References</a>
+              </li>
+              <li>
+                <a href="/editorial-policy/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Editorial Policy</a>
+              </li>
+              <li>
+                <a href="/corrections-policy/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Corrections Policy</a>
+              </li>
+            </ul>
+          </div>
+
           <!-- Legal Section -->
-          <div class="col-span-2 md:col-span-2 space-y-3">
+          <div class="col-span-1 lg:col-span-2 space-y-3">
             <p class="font-bold text-xs uppercase tracking-wider text-slate-900">Legal</p>
             <ul class="space-y-2.5 text-xs sm:text-sm">
               <li>
@@ -1941,6 +2116,9 @@ ${faqSectionHtml}        <footer class="mt-10 pt-6 border-t border-slate-200 fle
               </li>
               <li>
                 <a href="/disclaimer/" class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1">Disclaimer</a>
+              </li>
+              <li>
+                <button type="button" id="cookieSettingsFooterBtn" data-cookie-settings-trigger class="text-slate-600 hover:text-emerald-700 transition-colors duration-150 inline-flex items-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-1 cursor-pointer text-left">Cookie Settings</button>
               </li>
             </ul>
           </div>
@@ -1986,7 +2164,7 @@ ${faqSectionHtml}        <footer class="mt-10 pt-6 border-t border-slate-200 fle
               </svg>
             </a>
             <a
-              href="https://pin.it/4fRe9WNxE"
+              href="https://www.pinterest.com/suweldotools/"
               target="_blank"
               rel="noopener noreferrer"
               class="flex h-9 w-9 items-center justify-center rounded-lg bg-[#E60023] text-white shadow-xs transition-all duration-200 motion-safe:hover:-translate-y-0.5 hover:bg-[#cc001f] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E60023] focus-visible:ring-offset-2"
@@ -2030,16 +2208,28 @@ export function escapeXml(value: string | null | undefined): string {
 }
 
 /**
- * Formats an ISO timestamp into a YYYY-MM-DD sitemap lastmod date.
+ * Formats an ISO timestamp into a YYYY-MM-DD sitemap lastmod date in Asia/Manila time.
  */
 export function formatSitemapLastmod(isoString: string | null | undefined): string {
-  if (isoString) {
-    const parsed = new Date(isoString);
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed.toISOString().slice(0, 10);
+  const target = isoString ? new Date(isoString) : new Date();
+  const validDate = Number.isNaN(target.getTime()) ? new Date() : target;
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      timeZone: 'Asia/Manila',
+    }).formatToParts(validDate);
+    const y = parts.find((p) => p.type === 'year')?.value;
+    const m = parts.find((p) => p.type === 'month')?.value;
+    const d = parts.find((p) => p.type === 'day')?.value;
+    if (y && m && d) {
+      return `${y}-${m}-${d}`;
     }
+  } catch {
+    // Fallback below
   }
-  return new Date().toISOString().slice(0, 10);
+  return validDate.toISOString().slice(0, 10);
 }
 
 /**
@@ -2054,7 +2244,8 @@ function buildSitemapArticleUrlBlock(
   const loc = isTl
     ? `${SITE_ORIGIN}/tl/blog/${post.slug}/`
     : `${SITE_ORIGIN}/blog/${post.slug}/`;
-  const lastmod = formatSitemapLastmod(post.updated_at || post.published_at);
+  const editorialDates = resolveArticleEditorialDates(post);
+  const lastmod = formatSitemapLastmod(editorialDates.effectiveModifiedIso);
 
   const pair = post.group_id ? groupMap.get(post.group_id) : undefined;
   const hasPublishedPair = Boolean(pair?.en && pair?.tl);
@@ -2326,9 +2517,23 @@ export async function generatePublicBlog(): Promise<GenerateBlogResult> {
 
   let { data, error } = await supabase
     .from('published_blog_posts')
-    .select(`${basePublishedColumns}, author_name, faqs`)
+    .select(`${basePublishedColumns}, author_name, faqs, first_published_at`)
     .order('published_at', { ascending: false })
     .order('created_at', { ascending: false });
+
+  // Graceful fallback if public.published_blog_posts has not yet been updated to expose first_published_at
+  if (error && error.code === '42703') {
+    console.warn(
+      '[generate-blog] NOTICE: public.published_blog_posts does not yet expose first_published_at (code 42703). Falling back to published_at until supabase/migrations/20261109_published_blog_posts_first_published_at.sql is applied.'
+    );
+    const fallbackWithAuthorFaqs = await supabase
+      .from('published_blog_posts')
+      .select(`${basePublishedColumns}, author_name, faqs`)
+      .order('published_at', { ascending: false })
+      .order('created_at', { ascending: false });
+    data = fallbackWithAuthorFaqs.data as typeof data;
+    error = fallbackWithAuthorFaqs.error;
+  }
 
   // Backward-compatible fallback if public.published_blog_posts has not yet been updated to expose author_name and faqs
   if (error && error.code === '42703') {
@@ -2369,13 +2574,18 @@ export async function generatePublicBlog(): Promise<GenerateBlogResult> {
       continue;
     }
     const rawAuthor = typeof row.author_name === 'string' ? row.author_name.trim() : '';
+    const firstPublishedAt =
+      typeof row.first_published_at === 'string' && row.first_published_at.trim()
+        ? row.first_published_at.trim()
+        : row.published_at;
     validPosts.push({
       ...row,
       slug,
       title: String(row.title || '').trim(),
       excerpt: String(row.excerpt || '').trim(),
       content: String(row.content || ''),
-      author_name: rawAuthor ? rawAuthor : null,
+      first_published_at: firstPublishedAt,
+      author_name: resolveBlogAuthorName(rawAuthor),
       faqs: normalizePublishedFaqs(row.faqs),
     });
   }

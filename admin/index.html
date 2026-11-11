@@ -7,8 +7,8 @@
   <meta name="description" content="SuweldoTools internal bilingual blog administration interface." />
   <meta name="robots" content="noindex, nofollow" />
   <link rel="stylesheet" href="/src/index.css" />
-  <script type="module" src="/src/lib/supabase.ts?v=step19-announcement-ready"></script>
-  <script src="/js/blog-admin.js?v=step19-announcement-ready" defer></script>
+  <script type="module" src="/src/lib/supabase.ts?v=step21-editorial-dates"></script>
+  <script src="/js/blog-admin.js?v=step21-editorial-dates" defer></script>
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans antialiased">
   <!-- Skip Link for Keyboard Accessibility -->
@@ -457,6 +457,7 @@
               <option value="all">All Statuses</option>
               <option value="published">Published</option>
               <option value="draft">Draft</option>
+              <option value="archived">Archived</option>
             </select>
           </div>
         </div>
@@ -647,19 +648,20 @@
             <label for="post-author-name" class="block text-sm font-semibold text-slate-800">
               Author Name <span class="text-xs font-normal text-slate-500">(Optional)</span>
             </label>
-            <span id="author-name-char-count" class="text-xs text-slate-500 tabular-nums">0 / 120 chars</span>
+            <span id="author-name-char-count" class="text-xs text-slate-500 tabular-nums">14 / 120 chars</span>
           </div>
           <input
             type="text"
             id="post-author-name"
             name="authorName"
+            value="Mohammad Irfan"
             maxlength="120"
-            placeholder="e.g., Juan Dela Cruz (leave blank to display SuweldoTools)"
+            placeholder="Mohammad Irfan"
             aria-describedby="post-author-name-help post-author-name-error"
             class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-lg px-3.5 py-2.5 focus:border-emerald-600"
           />
           <p id="post-author-name-help" class="text-xs text-slate-500 mt-1">
-            Displayed as the article byline and <code class="text-[11px] bg-slate-100 px-1 rounded">BlogPosting.author</code>. If left blank, defaults to <strong>SuweldoTools</strong>.
+            Displayed as the article byline and <code class="text-[11px] bg-slate-100 px-1 rounded">BlogPosting.author</code>. Defaults to <strong>Mohammad Irfan</strong>.
           </p>
           <p id="post-author-name-error" class="hidden text-xs text-red-600 font-medium mt-1" role="alert"></p>
         </div>
@@ -706,6 +708,118 @@
           </p>
           <p id="post-content-error" class="hidden text-xs text-red-600 font-medium mt-1" role="alert"></p>
         </div>
+
+        <!-- Row 4B: Editorial Date Management Fieldset -->
+        <fieldset id="post-editorial-dates-fieldset" class="border border-slate-200 rounded-xl p-4 sm:p-5 bg-slate-50/60 space-y-4">
+          <legend class="text-sm font-bold text-slate-900 px-2">
+            Editorial Date Management
+          </legend>
+
+          <!-- Read-only Publication & Last Updated Status Cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div class="bg-white border border-slate-200 rounded-xl p-3.5">
+              <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                Original Published Date (<code class="font-mono text-[10px]">first_published_at</code>)
+              </span>
+              <p id="post-first-published-display" class="text-sm font-semibold text-slate-900 mt-1 font-mono">
+                Not yet published — set automatically on first publish
+              </p>
+              <p id="post-first-published-note" class="text-[11px] text-slate-500 mt-0.5">
+                Preserved permanently across edits and draft/republish cycles (Asia/Manila).
+              </p>
+            </div>
+
+            <div class="bg-white border border-slate-200 rounded-xl p-3.5">
+              <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                Current Last Updated Date (<code class="font-mono text-[10px]">updated_at</code>)
+              </span>
+              <p id="post-current-updated-display" class="text-sm font-semibold text-slate-900 mt-1 font-mono">
+                New unsaved post — set automatically when saved
+              </p>
+              <p id="post-current-updated-note" class="text-[11px] text-slate-500 mt-0.5">
+                Public pages show &ldquo;Last Updated&rdquo; only when later than Original Published Date.
+              </p>
+            </div>
+          </div>
+
+          <!-- Update Date Mode Selector -->
+          <div class="space-y-2.5">
+            <span class="block text-xs font-semibold text-slate-800">
+              Update Date Mode when Saving or Publishing
+            </span>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5" role="radiogroup" aria-label="Update Date Mode">
+              <label
+                for="post-update-mode-keep"
+                class="flex items-start gap-2.5 bg-white border border-slate-300 rounded-xl p-3 cursor-pointer hover:border-emerald-500 transition-colors"
+              >
+                <input
+                  type="radio"
+                  id="post-update-mode-keep"
+                  name="post-update-date-mode"
+                  value="keep"
+                  checked
+                  class="mt-0.5 text-emerald-600 focus:ring-emerald-600"
+                />
+                <span class="text-xs leading-snug">
+                  <strong class="block font-semibold text-slate-900">Keep existing Last Updated date (default)</strong>
+                  <span class="text-slate-500 mt-0.5 block">Best for minor edits, formatting, and typo fixes.</span>
+                </span>
+              </label>
+
+              <label
+                for="post-update-mode-now"
+                class="flex items-start gap-2.5 bg-white border border-slate-300 rounded-xl p-3 cursor-pointer hover:border-emerald-500 transition-colors"
+              >
+                <input
+                  type="radio"
+                  id="post-update-mode-now"
+                  name="post-update-date-mode"
+                  value="now"
+                  class="mt-0.5 text-emerald-600 focus:ring-emerald-600"
+                />
+                <span class="text-xs leading-snug">
+                  <strong class="block font-semibold text-slate-900">Update Last Updated to current time</strong>
+                  <span class="text-slate-500 mt-0.5 block">Marks the article as meaningfully updated right now.</span>
+                </span>
+              </label>
+
+              <label
+                for="post-update-mode-custom"
+                class="flex items-start gap-2.5 bg-white border border-slate-300 rounded-xl p-3 cursor-pointer hover:border-emerald-500 transition-colors"
+              >
+                <input
+                  type="radio"
+                  id="post-update-mode-custom"
+                  name="post-update-date-mode"
+                  value="custom"
+                  class="mt-0.5 text-emerald-600 focus:ring-emerald-600"
+                />
+                <span class="text-xs leading-snug">
+                  <strong class="block font-semibold text-slate-900">Set custom Last Updated date/time (Asia/Manila)</strong>
+                  <span class="text-slate-500 mt-0.5 block">Choose an explicit Philippine Standard Time timestamp.</span>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Custom Last Updated Date/Time Input (Shown when Custom mode is selected) -->
+          <div id="post-custom-updated-container" class="hidden bg-white border border-slate-200 rounded-xl p-3.5 space-y-1.5">
+            <label for="post-custom-updated-at" class="block text-xs font-semibold text-slate-800">
+              Custom Last Updated Date &amp; Time (Asia/Manila, UTC+08:00) <span class="text-red-600" aria-hidden="true">*</span>
+            </label>
+            <input
+              type="datetime-local"
+              id="post-custom-updated-at"
+              name="customUpdatedAt"
+              aria-describedby="post-custom-updated-at-help post-custom-updated-at-error"
+              class="w-full sm:w-80 bg-white border border-slate-300 text-slate-900 text-sm font-mono rounded-lg px-3.5 py-2 focus:border-emerald-600"
+            />
+            <p id="post-custom-updated-at-help" class="text-[11px] text-slate-500">
+              Interpreted in <strong>Asia/Manila (PHT, UTC+08:00)</strong> and stored in UTC ISO-8601. Cannot be earlier than the Original Published Date.
+            </p>
+            <p id="post-custom-updated-at-error" class="hidden text-xs text-red-600 font-medium mt-1" role="alert"></p>
+          </div>
+        </fieldset>
 
         <!-- Row 5: SEO Metadata Fieldset -->
         <fieldset class="border border-slate-200 rounded-xl p-4 sm:p-5 bg-slate-50/60 space-y-4">
@@ -1006,9 +1120,11 @@
           <div class="flex flex-wrap items-center gap-3 text-xs font-semibold text-emerald-700 uppercase tracking-wider">
             <span id="preview-article-lang">English (en-PH)</span>
             <span aria-hidden="true">&bull;</span>
-            <span id="preview-article-author" class="normal-case text-slate-600 font-medium">By SuweldoTools</span>
+            <span id="preview-article-date" class="normal-case text-slate-600 font-medium">Not yet published (Draft Preview)</span>
             <span aria-hidden="true">&bull;</span>
-            <span>Draft Preview</span>
+            <span id="preview-article-author" class="normal-case text-slate-600 font-medium">By <a href="/authors/mohammad-irfan/" rel="author" class="font-semibold text-emerald-700 hover:underline">Mohammad Irfan</a></span>
+            <span aria-hidden="true">&bull;</span>
+            <span id="preview-article-status-badge">Draft Preview</span>
           </div>
           <h3 id="preview-article-title" class="text-2xl sm:text-3xl font-bold text-slate-900 mt-2 leading-tight">
             Article Title Preview
@@ -1034,7 +1150,7 @@
             </div>
           </figure>
 
-          <div id="preview-article-content" class="mt-6 space-y-4 text-slate-800 text-base leading-relaxed"></div>
+          <div id="preview-article-content" class="prose prose-slate max-w-none mt-6 text-slate-800 text-base leading-relaxed"></div>
 
           <div id="preview-article-faqs" class="hidden mt-8 pt-6 border-t border-slate-200 space-y-3"></div>
         </article>

@@ -32,6 +32,9 @@
     isUploadingImage: false,
     selectedImageFile: null,
     localImagePreviewUrl: null,
+    lastUploadedFileSignature: null,
+    lastUploadedPublicUrl: null,
+    activeImageUploadPromise: null,
     publishingRowId: null,
     deletingPostId: null,
     pendingDeletePost: null,
@@ -61,6 +64,7 @@
     'TABLE': true, 'THEAD': true, 'TBODY': true, 'TFOOT': true, 'TR': true, 'TH': true, 'TD': true, 'CAPTION': true,
     'UL': true, 'OL': true, 'LI': true,
     'A': true,
+    'NAV': true,
     'CODE': true, 'PRE': true, 'BLOCKQUOTE': true,
     'HR': true
   };
@@ -75,9 +79,10 @@
     'TH': { 'colspan': true, 'rowspan': true, 'scope': true, 'class': true },
     'TD': { 'colspan': true, 'rowspan': true, 'scope': true, 'class': true },
     'TABLE': { 'class': true },
-    'H2': { 'class': true },
-    'H3': { 'class': true },
-    'H4': { 'class': true },
+    'H2': { 'id': true, 'class': true },
+    'H3': { 'id': true, 'class': true },
+    'H4': { 'id': true, 'class': true },
+    'NAV': { 'id': true, 'class': true, 'aria-label': true },
     'P': { 'class': true },
     'UL': { 'class': true },
     'OL': { 'class': true },
@@ -239,15 +244,50 @@
     return cleanContainer.innerHTML;
   }
 
-  function renderSafeAdminArticleContent(rawContent, customDoc) {
+  var EDITORIAL_PLACEHOLDER_TEXT_REGEX =
+    /^(?:last\s+updated|huling\s+na-update|published|inilathala)\s*:\s*\[[^\]]+\](?:\s*(?:·|\u00b7|•|\u2022|\||-)\s*(?:by|ni)\s+mohammad\s+irfan)?$/i;
+
+  function isEditorialDatePlaceholderBlock(rawBlock) {
+    if (!rawBlock || typeof rawBlock !== 'string') return false;
+    var withoutComments = rawBlock.replace(/<!--[\s\S]*?-->/g, '').trim();
+    if (!withoutComments) return false;
+    var plainText = withoutComments
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&middot;|&#183;|&#xB7;/gi, '·')
+      .replace(/&bull;|&#8226;/gi, '•')
+      .replace(/&nbsp;|&#160;/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return EDITORIAL_PLACEHOLDER_TEXT_REGEX.test(plainText);
+  }
+
+  function stripEditorialDatePlaceholdersFromContent(rawContent) {
     var normalized = String(rawContent || '').replace(/\r\n?/g, '\n').trim();
+    if (!normalized) return '';
+    return normalized
+      .replace(
+        /<p\b[^>]*>\s*(?:<small\b[^>]*>\s*)?(?:Last\s+updated|Huling\s+na-update|Published|Inilathala)\s*:\s*(?:<time\b[^>]*>\s*)?\[[^\]]+\](?:\s*<\/time>)?(?:\s*(?:&middot;|&#183;|·|•|\||-)\s*(?:By|Ni)\s+Mohammad\s+Irfan)?(?:\s*<\/small>)?\s*<\/p>/gi,
+        ''
+      )
+      .trim();
+  }
+
+  function renderSafeAdminArticleContent(rawContent, customDoc) {
+    var cleanedRaw = stripEditorialDatePlaceholdersFromContent(rawContent);
+    var normalized = String(cleanedRaw || '').replace(/\r\n?/g, '\n').trim();
     if (!normalized) {
       return '';
     }
 
-    // Protect double newlines inside multi-line HTML block tags (table, pre, blockquote, ul, ol)
-    var protectedText = normalized.replace(
-      /<(table|pre|blockquote|ul|ol)\b[\s\S]*?<\/\1>/gi,
+    // Transfer id from wrapper <section id="..."> or <div id="..."> onto immediate child <h2|h3|h4> if missing
+    var withHeadingIds = normalized.replace(
+      /<(?:section|div)\b[^>]*?\bid=(["'])([^"']+)\1[^>]*>\s*<(h[2-4])(?![^>]*\bid=)(\b[^>]*)>/gi,
+      '<$3 id="$2"$4>'
+    );
+
+    // Protect double newlines inside multi-line HTML block tags (table, pre, blockquote, ul, ol, nav)
+    var protectedText = withHeadingIds.replace(
+      /<(table|pre|blockquote|ul|ol|nav)\b[\s\S]*?<\/\1>/gi,
       function (match) {
         return match.replace(/\n{2,}/g, '\uE000');
       }
@@ -256,14 +296,24 @@
     var blocks = protectedText
       .split(/\n{2,}/)
       .map(function (block) {
-        return block.replace(/\uE000/g, '\n\n').trim();
+        return block.replace(/\uE000/g, '\n\n').replace(/<!--[\s\S]*?-->/g, '').trim();
       })
-      .filter(Boolean);
+      .filter(function (block) {
+        return Boolean(block) && !isEditorialDatePlaceholderBlock(block);
+      });
 
     var renderedBlocks = blocks.map(function (block) {
-      var lines = block.split('\n').map(function (line) {
-        return line.trim();
-      });
+      var lines = block
+        .split('\n')
+        .map(function (line) {
+          return line.trim();
+        })
+        .filter(function (line) {
+          return !isEditorialDatePlaceholderBlock(line);
+        });
+      if (lines.length === 0) {
+        return '';
+      }
 
       // Single-line Markdown-style H2 / H3 / H4 headings
       if (lines.length === 1 && lines[0].startsWith('#### ')) {
@@ -365,7 +415,13 @@
       }
 
       // Check if the block is already an HTML block element
-      var isHtmlBlock = /^\s*<(table|thead|tbody|tfoot|tr|th|td|caption|h[2-4]|ul|ol|li|p|blockquote|pre|hr)\b/i.test(block);
+      var isHtmlBlock =
+        /^\s*(?:<!--|<\/?(table|thead|tbody|tfoot|tr|th|td|caption|h[1-6]|ul|ol|li|p|blockquote|pre|hr|nav|div|section|article|figure|figcaption|header|footer|main|aside)\b)/i.test(
+          block
+        ) ||
+        /<(table|thead|tbody|tfoot|tr|th|td|caption|h[2-4]|ul|ol|li|p|blockquote|pre|hr|nav)\b/i.test(
+          block
+        );
       if (isHtmlBlock) {
         return block;
       }
@@ -379,13 +435,492 @@
     return sanitizeAdminHtml(assembledHtml, customDoc);
   }
 
+  var DEFAULT_BLOG_AUTHOR_NAME = 'Mohammad Irfan';
+  var AUTHOR_PROFILE_PATH_EN = '/authors/mohammad-irfan/';
+  var AUTHOR_PROFILE_PATH_TL = '/tl/authors/mohammad-irfan/';
+
+  function resolveAdminBlogAuthorName(_rawAuthorName) {
+    return DEFAULT_BLOG_AUTHOR_NAME;
+  }
+
+  function getAdminAuthorProfilePath(language) {
+    return language === 'tl' ? AUTHOR_PROFILE_PATH_TL : AUTHOR_PROFILE_PATH_EN;
+  }
+
+  function renderAdminAuthorBylineHtml(language, rawAuthorName) {
+    var isTl = language === 'tl';
+    var displayAuthorName = resolveAdminBlogAuthorName(rawAuthorName);
+    var prefix = isTl ? 'Ni ' : 'By ';
+    var href = getAdminAuthorProfilePath(isTl ? 'tl' : 'en');
+    return (
+      prefix +
+      '<a href="' +
+      escapeHtml(href) +
+      '" rel="author" class="font-semibold text-emerald-700 hover:underline">' +
+      escapeHtml(displayAuthorName) +
+      '</a>'
+    );
+  }
+
+  var BRANDED_IMAGE_SITE_ORIGIN = 'https://suweldotools.com';
+  var BARE_UUID_IMAGE_PATH_REGEX =
+    /(?:^|\/)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/?$/i;
+  var SUPABASE_FEATURED_IMAGE_URL_REGEX =
+    /^(?:https?:\/\/[^/]+)?\/?(?:storage\/v1\/object\/public\/[^/]+\/)?featured\/(\d{4})[-/](\d{2})\/([a-zA-Z0-9][a-zA-Z0-9._-]{0,199}\.(?:webp|png|jpe?g))$/i;
+  var BRANDED_IMAGE_URL_REGEX =
+    /^(?:https?:\/\/(?:www\.)?suweldotools\.com)?\/images\/(\d{4})\/(\d{2})\/([a-zA-Z0-9][a-zA-Z0-9._-]{0,199}\.(?:webp|png|jpe?g))$/i;
+
+  function isValidAdminImageYearMonth(year, month) {
+    if (!/^\d{4}$/.test(year) || !/^(0[1-9]|1[0-2])$/.test(month)) {
+      return false;
+    }
+    var y = Number(year);
+    return y >= 2000 && y <= 2100;
+  }
+
+  function validateAdminFeaturedImageUrl(rawUrl) {
+    if (rawUrl === null || rawUrl === undefined) {
+      return { valid: true, normalizedUrl: '', error: null };
+    }
+    var trimmed = String(rawUrl).trim();
+    if (!trimmed) {
+      return { valid: true, normalizedUrl: '', error: null };
+    }
+
+    var lower = trimmed.toLowerCase();
+    if (lower.indexOf('blob:') === 0) {
+      return {
+        valid: false,
+        normalizedUrl: '',
+        error:
+          'Browser blob: URLs are temporary local previews and cannot be saved. Please upload the image file to Supabase Storage.'
+      };
+    }
+    if (lower.indexOf('data:') === 0) {
+      return {
+        valid: false,
+        normalizedUrl: '',
+        error:
+          'Inline data: URLs are not supported. Please upload the image file or provide a valid HTTPS image URL.'
+      };
+    }
+    if (
+      trimmed.indexOf('\\') !== -1 ||
+      trimmed.indexOf('..') !== -1 ||
+      /%2e/i.test(trimmed) ||
+      /%2f/i.test(trimmed) ||
+      /%5c/i.test(trimmed) ||
+      /%00/i.test(trimmed) ||
+      /[\x00-\x1f\x7f]/.test(trimmed)
+    ) {
+      return {
+        valid: false,
+        normalizedUrl: '',
+        error: 'Featured Image URL contains invalid or unsafe path traversal characters.'
+      };
+    }
+    if (trimmed.indexOf('//') === 0) {
+      return {
+        valid: false,
+        normalizedUrl: '',
+        error: 'Featured Image URL must start with https://, http://, or /.'
+      };
+    }
+
+    var pathWithoutQuery = trimmed.split(/[?#]/)[0];
+    if (BARE_UUID_IMAGE_PATH_REGEX.test(pathWithoutQuery)) {
+      return {
+        valid: false,
+        normalizedUrl: '',
+        error:
+          'Featured Image URL appears to be a temporary browser preview UUID rather than a stored image. Please click Upload Image first.'
+      };
+    }
+
+    var supabaseMatch = SUPABASE_FEATURED_IMAGE_URL_REGEX.exec(trimmed);
+    if (supabaseMatch) {
+      if (!isValidAdminImageYearMonth(supabaseMatch[1], supabaseMatch[2])) {
+        return {
+          valid: false,
+          normalizedUrl: '',
+          error: 'Featured Image URL has an invalid year or month segment.'
+        };
+      }
+      return {
+        valid: true,
+        normalizedUrl:
+          BRANDED_IMAGE_SITE_ORIGIN +
+          '/images/' +
+          supabaseMatch[1] +
+          '/' +
+          supabaseMatch[2] +
+          '/' +
+          supabaseMatch[3],
+        error: null
+      };
+    }
+
+    if (
+      trimmed.indexOf('/images/') === 0 ||
+      trimmed === '/images' ||
+      /^https?:\/\/(?:www\.)?suweldotools\.com\/images(?:\/|$)/i.test(trimmed)
+    ) {
+      var brandedMatch = BRANDED_IMAGE_URL_REGEX.exec(trimmed);
+      if (!brandedMatch) {
+        return {
+          valid: false,
+          normalizedUrl: '',
+          error:
+            'Branded image URLs must follow https://suweldotools.com/images/YYYY/MM/filename.(webp|png|jpg|jpeg).'
+        };
+      }
+      if (!isValidAdminImageYearMonth(brandedMatch[1], brandedMatch[2])) {
+        return {
+          valid: false,
+          normalizedUrl: '',
+          error:
+            'Branded image URLs must have a valid 4-digit year (2000-2100) and 2-digit month (01-12).'
+        };
+      }
+      return {
+        valid: true,
+        normalizedUrl:
+          BRANDED_IMAGE_SITE_ORIGIN +
+          '/images/' +
+          brandedMatch[1] +
+          '/' +
+          brandedMatch[2] +
+          '/' +
+          brandedMatch[3],
+        error: null
+      };
+    }
+
+    if (trimmed.indexOf('/') === 0) {
+      if (trimmed.indexOf('//') !== -1) {
+        return {
+          valid: false,
+          normalizedUrl: '',
+          error: 'Featured Image URL contains invalid duplicate slashes.'
+        };
+      }
+      return { valid: true, normalizedUrl: trimmed, error: null };
+    }
+
+    try {
+      var parsed = new URL(trimmed);
+      if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+        return {
+          valid: false,
+          normalizedUrl: '',
+          error: 'Featured Image URL must start with https://, http://, or /.'
+        };
+      }
+      if (BARE_UUID_IMAGE_PATH_REGEX.test(parsed.pathname)) {
+        return {
+          valid: false,
+          normalizedUrl: '',
+          error:
+            'Featured Image URL appears to be a temporary browser preview UUID rather than a stored image. Please click Upload Image first.'
+        };
+      }
+      if (/\.run\.app$/i.test(parsed.hostname) || parsed.hostname === 'localhost') {
+        var localBrandedMatch = /^\/images\/(\d{4})\/(\d{2})\/([a-zA-Z0-9][a-zA-Z0-9._-]{0,199}\.(?:webp|png|jpe?g))$/i.exec(
+          parsed.pathname
+        );
+        if (
+          localBrandedMatch &&
+          isValidAdminImageYearMonth(localBrandedMatch[1], localBrandedMatch[2])
+        ) {
+          return {
+            valid: true,
+            normalizedUrl:
+              BRANDED_IMAGE_SITE_ORIGIN +
+              '/images/' +
+              localBrandedMatch[1] +
+              '/' +
+              localBrandedMatch[2] +
+              '/' +
+              localBrandedMatch[3],
+            error: null
+          };
+        }
+        return {
+          valid: false,
+          normalizedUrl: '',
+          error:
+            'Temporary preview environment URLs cannot be saved as permanent Featured Image URLs. Please upload the image file.'
+        };
+      }
+      return { valid: true, normalizedUrl: parsed.toString(), error: null };
+    } catch (_err) {
+      return {
+        valid: false,
+        normalizedUrl: '',
+        error: 'Featured Image URL must start with https://, http://, or /.'
+      };
+    }
+  }
+
+  function resolveAdminPreviewImageSrc(rawUrl, overrideHostname) {
+    var validation = validateAdminFeaturedImageUrl(rawUrl);
+    if (!validation.valid || !validation.normalizedUrl) {
+      return '';
+    }
+    var normalized = validation.normalizedUrl;
+    var brandedMatch = BRANDED_IMAGE_URL_REGEX.exec(normalized);
+    if (!brandedMatch) {
+      return normalized;
+    }
+
+    var hostname =
+      overrideHostname !== undefined
+        ? String(overrideHostname || '')
+        : typeof window !== 'undefined' && window.location && window.location.hostname
+          ? window.location.hostname
+          : '';
+
+    if (
+      hostname &&
+      hostname !== 'suweldotools.com' &&
+      hostname !== 'www.suweldotools.com'
+    ) {
+      return '/images/' + brandedMatch[1] + '/' + brandedMatch[2] + '/' + brandedMatch[3];
+    }
+
+    return normalized;
+  }
+
+  function getImageFileSignature(file) {
+    if (!file) return '';
+    return [
+      String(file.name || ''),
+      String(typeof file.size === 'number' ? file.size : 0),
+      String(typeof file.lastModified === 'number' ? file.lastModified : 0),
+      String(file.type || '').toLowerCase()
+    ].join(':');
+  }
+
+  var MANILA_OFFSET_MS = 8 * 60 * 60 * 1000;
+  var MANILA_DATETIME_LOCAL_REGEX =
+    /^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/;
+
+  function parseAdminManilaDateTimeToUtcIso(rawInput) {
+    var trimmed = typeof rawInput === 'string' ? rawInput.trim() : '';
+    if (!trimmed) {
+      return {
+        valid: false,
+        utcIso: null,
+        error: 'Custom Last Updated date and time is required when Custom mode is selected.'
+      };
+    }
+
+    var match = MANILA_DATETIME_LOCAL_REGEX.exec(trimmed);
+    if (match) {
+      var year = Number(match[1]);
+      var month = Number(match[2]);
+      var day = Number(match[3]);
+      var hour = Number(match[4]);
+      var minute = Number(match[5]);
+      var second = match[6] ? Number(match[6]) : 0;
+      var ms = match[7] ? Number(String(match[7] + '000').slice(0, 3)) : 0;
+
+      if (
+        year < 2000 ||
+        year > 2100 ||
+        month < 1 ||
+        month > 12 ||
+        day < 1 ||
+        day > 31 ||
+        hour < 0 ||
+        hour > 23 ||
+        minute < 0 ||
+        minute > 59 ||
+        second < 0 ||
+        second > 59
+      ) {
+        return {
+          valid: false,
+          utcIso: null,
+          error: 'Custom Last Updated date/time contains out-of-range calendar or clock values.'
+        };
+      }
+
+      var wallClockUtcMs = Date.UTC(year, month - 1, day, hour, minute, second, ms);
+      var checkDate = new Date(wallClockUtcMs);
+      if (
+        checkDate.getUTCFullYear() !== year ||
+        checkDate.getUTCMonth() !== month - 1 ||
+        checkDate.getUTCDate() !== day ||
+        checkDate.getUTCHours() !== hour ||
+        checkDate.getUTCMinutes() !== minute
+      ) {
+        return {
+          valid: false,
+          utcIso: null,
+          error: 'Custom Last Updated date is not a valid calendar date.'
+        };
+      }
+
+      var utcMs = wallClockUtcMs - MANILA_OFFSET_MS;
+      return {
+        valid: true,
+        utcIso: new Date(utcMs).toISOString(),
+        error: null
+      };
+    }
+
+    if (/(?:Z|[+-]\d{2}:?\d{2})$/i.test(trimmed)) {
+      var parsedMs = Date.parse(trimmed);
+      if (!isNaN(parsedMs)) {
+        return {
+          valid: true,
+          utcIso: new Date(parsedMs).toISOString(),
+          error: null
+        };
+      }
+    }
+
+    return {
+      valid: false,
+      utcIso: null,
+      error: 'Enter a valid Asia/Manila date and time (YYYY-MM-DDTHH:mm).'
+    };
+  }
+
+  function formatUtcIsoToManilaInput(isoString) {
+    if (!isoString || typeof isoString !== 'string') return '';
+    var parsedMs = Date.parse(isoString.trim());
+    if (isNaN(parsedMs)) return '';
+    var manilaMs = parsedMs + MANILA_OFFSET_MS;
+    var d = new Date(manilaMs);
+    var yyyy = String(d.getUTCFullYear()).padStart(4, '0');
+    var mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+    var dd = String(d.getUTCDate()).padStart(2, '0');
+    var hh = String(d.getUTCHours()).padStart(2, '0');
+    var min = String(d.getUTCMinutes()).padStart(2, '0');
+    return yyyy + '-' + mm + '-' + dd + 'T' + hh + ':' + min;
+  }
+
+  function formatAdminPublicArticleDate(isoString, language) {
+    if (!isoString) return '';
+    var parsed = new Date(isoString);
+    if (isNaN(parsed.getTime())) return '';
+    var locale = language === 'tl' ? 'tl-PH' : 'en-PH';
+    try {
+      return new Intl.DateTimeFormat(locale, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        timeZone: 'Asia/Manila'
+      }).format(parsed);
+    } catch (_err) {
+      return new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        timeZone: 'UTC'
+      }).format(parsed);
+    }
+  }
+
+  function resolveAdminPreviewEditorialDates(options) {
+    var opts = options || {};
+    var lang = opts.language === 'tl' ? 'tl' : 'en';
+    var isTl = lang === 'tl';
+    var mode = opts.updateDateMode === 'now' || opts.updateDateMode === 'custom' ? opts.updateDateMode : 'keep';
+    var originalPubIso = opts.firstPublishedAt || opts.publishedAt || null;
+    var existingUpdatedIso = opts.updatedAt || null;
+    var nowIso = opts.nowIso || new Date().toISOString();
+
+    var effectiveUpdatedIso = existingUpdatedIso;
+    if (mode === 'now') {
+      effectiveUpdatedIso = nowIso;
+    } else if (mode === 'custom' && opts.customUpdatedAt) {
+      var parsedCustom = parseAdminManilaDateTimeToUtcIso(opts.customUpdatedAt);
+      if (parsedCustom.valid && parsedCustom.utcIso) {
+        effectiveUpdatedIso = parsedCustom.utcIso;
+      }
+    }
+
+    var authorHref = getAdminAuthorProfilePath(lang);
+
+    if (!originalPubIso) {
+      if (mode === 'custom' && effectiveUpdatedIso) {
+        var customDraftDisplay = formatAdminPublicArticleDate(effectiveUpdatedIso, lang);
+        return {
+          isPublished: false,
+          isMeaningfullyUpdated: false,
+          authorHref: authorHref,
+          headerLabel: isTl
+            ? 'Draft Preview · Custom na petsa: ' + customDraftDisplay
+            : 'Draft Preview · Custom date: ' + customDraftDisplay,
+          modeBadgeText: 'Draft Preview (Custom Date)'
+        };
+      }
+      return {
+        isPublished: false,
+        isMeaningfullyUpdated: false,
+        authorHref: authorHref,
+        headerLabel: isTl
+          ? 'Hindi pa nailalathala (Itatakda sa unang pag-publish)'
+          : 'Not yet published (Set automatically on first publish)',
+        modeBadgeText: mode === 'now' ? 'Draft Preview (Update Now)' : 'Draft Preview'
+      };
+    }
+
+    var origMs = Date.parse(originalPubIso);
+    var updMs = effectiveUpdatedIso ? Date.parse(effectiveUpdatedIso) : NaN;
+    var isMeaningfullyUpdated =
+      !isNaN(origMs) && !isNaN(updMs) && updMs > origMs;
+
+    var displayIso = isMeaningfullyUpdated ? effectiveUpdatedIso : originalPubIso;
+    var formattedDate = formatAdminPublicArticleDate(displayIso, lang);
+    var prefix = isMeaningfullyUpdated
+      ? isTl
+        ? 'Huling Na-update: '
+        : 'Last Updated: '
+      : isTl
+        ? 'Inilathala: '
+        : 'Published: ';
+
+    var modeSuffix =
+      mode === 'now'
+        ? 'Mode: Update to Now'
+        : mode === 'custom'
+          ? 'Mode: Custom Date'
+          : 'Mode: Keep Existing Date';
+
+    return {
+      isPublished: true,
+      isMeaningfullyUpdated: isMeaningfullyUpdated,
+      authorHref: authorHref,
+      headerLabel: prefix + formattedDate,
+      modeBadgeText: modeSuffix,
+      effectivePublishedIso: originalPubIso,
+      effectiveUpdatedIso: isMeaningfullyUpdated ? effectiveUpdatedIso : originalPubIso
+    };
+  }
+
   // Expose preview sanitizer helpers for browser and testing inspection
   if (typeof window !== 'undefined') {
     window.__SUWELDOTOOLS_BLOG_PREVIEW_RENDERER__ = {
       renderSafeAdminArticleContent: renderSafeAdminArticleContent,
       sanitizeAdminHtml: sanitizeAdminHtml,
       isSafePreviewUrl: isSafePreviewUrl,
-      sanitizeAdminDomNode: sanitizeAdminDomNode
+      sanitizeAdminDomNode: sanitizeAdminDomNode,
+      resolveAdminBlogAuthorName: resolveAdminBlogAuthorName,
+      getAdminAuthorProfilePath: getAdminAuthorProfilePath,
+      renderAdminAuthorBylineHtml: renderAdminAuthorBylineHtml,
+      validateAdminFeaturedImageUrl: validateAdminFeaturedImageUrl,
+      resolveAdminPreviewImageSrc: resolveAdminPreviewImageSrc,
+      getImageFileSignature: getImageFileSignature,
+      isEditorialDatePlaceholderBlock: isEditorialDatePlaceholderBlock,
+      stripEditorialDatePlaceholdersFromContent: stripEditorialDatePlaceholdersFromContent,
+      parseAdminManilaDateTimeToUtcIso: parseAdminManilaDateTimeToUtcIso,
+      formatUtcIsoToManilaInput: formatUtcIsoToManilaInput,
+      formatAdminPublicArticleDate: formatAdminPublicArticleDate,
+      resolveAdminPreviewEditorialDates: resolveAdminPreviewEditorialDates
     };
   }
 
@@ -400,7 +935,19 @@
         sanitizeAdminDomNode: sanitizeAdminDomNode,
         sanitizeAdminHtml: sanitizeAdminHtml,
         renderSafeAdminArticleContent: renderSafeAdminArticleContent,
-        escapeHtml: escapeHtml
+        escapeHtml: escapeHtml,
+        resolveAdminBlogAuthorName: resolveAdminBlogAuthorName,
+        getAdminAuthorProfilePath: getAdminAuthorProfilePath,
+        renderAdminAuthorBylineHtml: renderAdminAuthorBylineHtml,
+        validateAdminFeaturedImageUrl: validateAdminFeaturedImageUrl,
+        resolveAdminPreviewImageSrc: resolveAdminPreviewImageSrc,
+        getImageFileSignature: getImageFileSignature,
+        isEditorialDatePlaceholderBlock: isEditorialDatePlaceholderBlock,
+        stripEditorialDatePlaceholdersFromContent: stripEditorialDatePlaceholdersFromContent,
+        parseAdminManilaDateTimeToUtcIso: parseAdminManilaDateTimeToUtcIso,
+        formatUtcIsoToManilaInput: formatUtcIsoToManilaInput,
+        formatAdminPublicArticleDate: formatAdminPublicArticleDate,
+        resolveAdminPreviewEditorialDates: resolveAdminPreviewEditorialDates
       };
     }
     return;
@@ -532,6 +1079,16 @@
   var editorRecordTimestamps = document.getElementById('editor-record-timestamps');
   var editorRecordStatusBadge = document.getElementById('editor-record-status-badge');
 
+  // DOM Elements: Editorial Date Management
+  var postFirstPublishedDisplay = document.getElementById('post-first-published-display');
+  var postCurrentUpdatedDisplay = document.getElementById('post-current-updated-display');
+  var radioUpdateModeKeep = document.getElementById('post-update-mode-keep');
+  var radioUpdateModeNow = document.getElementById('post-update-mode-now');
+  var radioUpdateModeCustom = document.getElementById('post-update-mode-custom');
+  var updateModeRadios = document.querySelectorAll('input[name="post-update-date-mode"]');
+  var customUpdatedContainer = document.getElementById('post-custom-updated-container');
+  var inputCustomUpdatedAt = document.getElementById('post-custom-updated-at');
+
   // DOM Elements: Counters
   var authorNameCharCount = document.getElementById('author-name-char-count');
   var excerptCharCount = document.getElementById('excerpt-char-count');
@@ -596,10 +1153,103 @@
         month: 'short',
         day: '2-digit',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        timeZone: 'Asia/Manila'
       });
     } catch (_err) {
       return String(isoString);
+    }
+  }
+
+  function getSelectedUpdateDateMode() {
+    if (radioUpdateModeNow && radioUpdateModeNow.checked) return 'now';
+    if (radioUpdateModeCustom && radioUpdateModeCustom.checked) return 'custom';
+    return 'keep';
+  }
+
+  function syncCustomUpdateInputVisibility() {
+    var mode = getSelectedUpdateDateMode();
+    if (customUpdatedContainer) {
+      if (mode === 'custom') {
+        customUpdatedContainer.classList.remove('hidden');
+        if (inputCustomUpdatedAt && !inputCustomUpdatedAt.value) {
+          var rec = state.editingPostRecord;
+          var seedIso =
+            (rec && (rec.updated_at || rec.first_published_at || rec.published_at)) ||
+            new Date().toISOString();
+          inputCustomUpdatedAt.value = formatUtcIsoToManilaInput(seedIso);
+        }
+      } else {
+        customUpdatedContainer.classList.add('hidden');
+      }
+    }
+    var customErrEl = document.getElementById('post-custom-updated-at-error');
+    if (mode !== 'custom' && customErrEl) {
+      customErrEl.textContent = '';
+      customErrEl.classList.add('hidden');
+      if (inputCustomUpdatedAt) {
+        inputCustomUpdatedAt.removeAttribute('aria-invalid');
+        inputCustomUpdatedAt.classList.remove('border-red-500');
+      }
+    }
+  }
+
+  function setSelectedUpdateDateMode(mode, customLocalValue) {
+    var normalizedMode = mode === 'now' || mode === 'custom' ? mode : 'keep';
+    if (radioUpdateModeKeep) radioUpdateModeKeep.checked = normalizedMode === 'keep';
+    if (radioUpdateModeNow) radioUpdateModeNow.checked = normalizedMode === 'now';
+    if (radioUpdateModeCustom) radioUpdateModeCustom.checked = normalizedMode === 'custom';
+    if (inputCustomUpdatedAt) {
+      if (typeof customLocalValue === 'string') {
+        inputCustomUpdatedAt.value = customLocalValue;
+      } else if (normalizedMode !== 'custom') {
+        inputCustomUpdatedAt.value = '';
+      }
+    }
+    syncCustomUpdateInputVisibility();
+  }
+
+  function syncEditorialDateDisplayForRecord(post) {
+    var origPub = post ? post.first_published_at || post.published_at || null : null;
+    if (postFirstPublishedDisplay) {
+      if (origPub) {
+        postFirstPublishedDisplay.textContent = formatTimestamp(origPub) + ' PHT';
+      } else {
+        postFirstPublishedDisplay.textContent =
+          'Not yet published — set automatically on first publish';
+      }
+    }
+    if (postCurrentUpdatedDisplay) {
+      if (post && post.updated_at) {
+        var isMeaningful =
+          origPub &&
+          !isNaN(Date.parse(origPub)) &&
+          !isNaN(Date.parse(post.updated_at)) &&
+          Date.parse(post.updated_at) > Date.parse(origPub);
+        postCurrentUpdatedDisplay.textContent =
+          formatTimestamp(post.updated_at) +
+          ' PHT' +
+          (origPub
+            ? isMeaningful
+              ? ' (Meaningfully updated)'
+              : ' (Matches original publish)'
+            : ' (Draft saved)');
+      } else {
+        postCurrentUpdatedDisplay.textContent =
+          'New unsaved post — set automatically when saved';
+      }
+    }
+    if (inputCustomUpdatedAt) {
+      if (origPub) {
+        var minLocal = formatUtcIsoToManilaInput(origPub);
+        if (minLocal) {
+          inputCustomUpdatedAt.setAttribute('min', minLocal);
+        } else {
+          inputCustomUpdatedAt.removeAttribute('min');
+        }
+      } else {
+        inputCustomUpdatedAt.removeAttribute('min');
+      }
     }
   }
 
@@ -811,42 +1461,44 @@
     }
 
     if (urlVal) {
-      var isValidPrefix =
-        urlVal.indexOf('https://') === 0 ||
-        urlVal.indexOf('http://') === 0 ||
-        urlVal.indexOf('/') === 0;
+      var urlCheck = validateAdminFeaturedImageUrl(urlVal);
+      var isValidUrl = urlCheck.valid && Boolean(urlCheck.normalizedUrl);
+      var previewSrc = isValidUrl ? resolveAdminPreviewImageSrc(urlCheck.normalizedUrl) : '';
 
       imagePreviewCard.classList.remove('hidden');
 
-      if (isValidPrefix) {
+      if (isValidUrl && previewSrc) {
         if (imagePreviewError) imagePreviewError.classList.add('hidden');
         imagePreviewImg.classList.remove('hidden');
-        if (imagePreviewImg.getAttribute('src') !== urlVal) {
-          imagePreviewImg.src = urlVal;
+        if (imagePreviewImg.getAttribute('src') !== previewSrc) {
+          imagePreviewImg.src = previewSrc;
         }
         imagePreviewImg.alt = altVal || 'Featured image preview';
       } else {
         imagePreviewImg.classList.add('hidden');
         imagePreviewImg.removeAttribute('src');
         if (imagePreviewError) {
-          imagePreviewError.textContent = 'URL must start with https://, http://, or /';
+          imagePreviewError.textContent =
+            urlCheck.error || 'URL must start with https://, http://, or /';
           imagePreviewError.classList.remove('hidden');
         }
       }
 
       if (imagePreviewBadge) {
-        var isSupabaseStorageUrl = urlVal.indexOf('/storage/v1/object/public/blog-images/') !== -1;
-        imagePreviewBadge.textContent = !isValidPrefix
+        var isBrandedUrl =
+          isValidUrl &&
+          urlCheck.normalizedUrl.indexOf('https://suweldotools.com/images/') === 0;
+        imagePreviewBadge.textContent = !isValidUrl
           ? 'Invalid Image URL Format'
-          : isSupabaseStorageUrl
-            ? 'Supabase Storage Image URL'
+          : isBrandedUrl
+            ? 'Branded SuweldoTools Image URL'
             : 'Active Image URL';
-        imagePreviewBadge.className = !isValidPrefix
+        imagePreviewBadge.className = !isValidUrl
           ? 'inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-red-50 text-red-800 border border-red-200'
           : 'inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200';
       }
       if (imagePreviewSource) {
-        imagePreviewSource.textContent = urlVal;
+        imagePreviewSource.textContent = isValidUrl ? urlCheck.normalizedUrl : urlVal;
       }
       if (imagePreviewAltSummary) {
         imagePreviewAltSummary.textContent = altVal
@@ -999,6 +1651,7 @@
   }
 
   function getFormValues() {
+    var mode = getSelectedUpdateDateMode();
     return {
       language: inputLanguage && inputLanguage.value === 'tl' ? 'tl' : 'en',
       title: inputTitle ? inputTitle.value.trim() : '',
@@ -1010,7 +1663,10 @@
       meta_description: inputMetaDesc ? inputMetaDesc.value.trim() : '',
       featured_image_url: inputImageUrl ? inputImageUrl.value.trim() : '',
       featured_image_alt: inputImageAlt ? inputImageAlt.value.trim() : '',
-      faqs: getCleanFaqsForSubmit(state.faqs)
+      faqs: getCleanFaqsForSubmit(state.faqs),
+      update_date_mode: mode,
+      custom_updated_at:
+        mode === 'custom' && inputCustomUpdatedAt ? inputCustomUpdatedAt.value.trim() : ''
     };
   }
 
@@ -1026,7 +1682,9 @@
       meta_description: inputMetaDesc ? inputMetaDesc.value : '',
       featured_image_url: inputImageUrl ? inputImageUrl.value : '',
       featured_image_alt: inputImageAlt ? inputImageAlt.value : '',
-      faqs: normalizeFaqArray(state.faqs)
+      faqs: normalizeFaqArray(state.faqs),
+      update_date_mode: getSelectedUpdateDateMode(),
+      custom_updated_at: inputCustomUpdatedAt ? inputCustomUpdatedAt.value : ''
     };
   }
 
@@ -1038,14 +1696,15 @@
     return Boolean(
       v.title.trim() ||
         v.slug.trim() ||
-        v.author_name.trim() ||
+        (v.author_name.trim() && v.author_name.trim() !== DEFAULT_BLOG_AUTHOR_NAME) ||
         v.excerpt.trim() ||
         v.content.trim() ||
         v.seo_title.trim() ||
         v.meta_description.trim() ||
         v.featured_image_url.trim() ||
         v.featured_image_alt.trim() ||
-        hasFaqContent
+        hasFaqContent ||
+        (v.update_date_mode && v.update_date_mode !== 'keep')
     );
   }
 
@@ -1059,7 +1718,7 @@
         raw.language !== recLang ||
         raw.title !== (rec.title || '') ||
         raw.slug !== (rec.slug || '') ||
-        raw.author_name !== (rec.author_name || '') ||
+        raw.author_name !== resolveAdminBlogAuthorName(rec.author_name) ||
         raw.excerpt !== (rec.excerpt || '') ||
         raw.content !== (rec.content || '') ||
         raw.seo_title !== (rec.seo_title || '') ||
@@ -1067,7 +1726,8 @@
         raw.featured_image_url !== (rec.featured_image_url || '') ||
         raw.featured_image_alt !== (rec.featured_image_alt || '') ||
         serializeFaqsForComparison(raw.faqs) !== serializeFaqsForComparison(rec.faqs) ||
-        findFirstIncompleteFaqRowIndex(raw.faqs) !== -1
+        findFirstIncompleteFaqRowIndex(raw.faqs) !== -1 ||
+        raw.update_date_mode !== 'keep'
       );
     }
 
@@ -1090,6 +1750,8 @@
       featured_image_url: raw.featured_image_url,
       featured_image_alt: raw.featured_image_alt,
       faqs: normalizeFaqArray(raw.faqs),
+      update_date_mode: raw.update_date_mode || 'keep',
+      custom_updated_at: raw.custom_updated_at || '',
       languageTouched: Boolean(state.languageTouched)
     };
   }
@@ -1151,7 +1813,13 @@
       inputMetaDesc.value = snapshot.meta_description;
     }
     if (inputImageUrl && typeof snapshot.featured_image_url === 'string') {
-      inputImageUrl.value = snapshot.featured_image_url;
+      var snapUrlCheck = validateAdminFeaturedImageUrl(snapshot.featured_image_url);
+      var normalizedSnapImageUrl =
+        snapUrlCheck.valid && snapUrlCheck.normalizedUrl
+          ? snapUrlCheck.normalizedUrl
+          : snapshot.featured_image_url;
+      inputImageUrl.value = normalizedSnapImageUrl;
+      snapshot.featured_image_url = normalizedSnapImageUrl;
     }
     if (inputImageAlt && typeof snapshot.featured_image_alt === 'string') {
       inputImageAlt.value = snapshot.featured_image_alt;
@@ -1160,6 +1828,10 @@
       state.faqs = normalizeFaqArray(snapshot.faqs);
       renderFaqRepeater();
     }
+    setSelectedUpdateDateMode(
+      snapshot.update_date_mode || 'keep',
+      typeof snapshot.custom_updated_at === 'string' ? snapshot.custom_updated_at : ''
+    );
 
     state.languageTouched = Boolean(snapshot.languageTouched);
     updateSlugPrefix();
@@ -1199,7 +1871,9 @@
         Boolean(
           (parsed.title && String(parsed.title).trim()) ||
             (parsed.slug && String(parsed.slug).trim()) ||
-            (parsed.author_name && String(parsed.author_name).trim()) ||
+            (parsed.author_name &&
+              String(parsed.author_name).trim() &&
+              String(parsed.author_name).trim() !== DEFAULT_BLOG_AUTHOR_NAME) ||
             (parsed.excerpt && String(parsed.excerpt).trim()) ||
             (parsed.content && String(parsed.content).trim()) ||
             (parsed.seo_title && String(parsed.seo_title).trim()) ||
@@ -1261,15 +1935,36 @@
     if (!vals.seo_title) return false;
     if (!vals.meta_description) return false;
 
-    if (vals.featured_image_url) {
-      var validUrlPrefix =
-        vals.featured_image_url.indexOf('https://') === 0 ||
-        vals.featured_image_url.indexOf('http://') === 0 ||
-        vals.featured_image_url.indexOf('/') === 0;
-      if (!validUrlPrefix) return false;
+    var hasPendingFile = Boolean(
+      state.selectedImageFile ||
+        (inputImageFile && inputImageFile.files && inputImageFile.files.length > 0)
+    );
+
+    if (hasPendingFile) {
+      if (!vals.featured_image_alt) return false;
+    } else if (vals.featured_image_url) {
+      var urlValidation = validateAdminFeaturedImageUrl(vals.featured_image_url);
+      if (!urlValidation.valid) return false;
       if (!vals.featured_image_alt) return false;
     } else if (vals.featured_image_alt) {
       return false;
+    }
+
+    if (vals.update_date_mode === 'custom') {
+      var customParse = parseAdminManilaDateTimeToUtcIso(vals.custom_updated_at);
+      if (!customParse.valid || !customParse.utcIso) {
+        return false;
+      }
+      var recOrigPub =
+        state.editingPostRecord &&
+        (state.editingPostRecord.first_published_at || state.editingPostRecord.published_at);
+      if (recOrigPub) {
+        var origMs = Date.parse(recOrigPub);
+        var custMs = Date.parse(customParse.utcIso);
+        if (!isNaN(origMs) && !isNaN(custMs) && custMs < origMs) {
+          return false;
+        }
+      }
     }
 
     if (findFirstIncompleteFaqRowIndex(state.faqs) !== -1) {
@@ -1472,9 +2167,21 @@
         var isTl = post.language === 'tl';
         var urlPrefix = isTl ? '/tl/blog/' : '/blog/';
         var langLabel = isTl ? 'Filipino (TL)' : 'English (EN)';
-        var isPublished = String(post.status || '').toLowerCase() === 'published';
-        var statusText = isPublished ? 'Published' : 'Draft';
-        var statusColor = isPublished ? 'text-emerald-700 font-semibold' : 'text-amber-700 font-semibold';
+        var statusLower = String(post.status || '').toLowerCase();
+        var isPublished = statusLower === 'published';
+        var isArchived = statusLower === 'archived';
+        var statusText = isPublished ? 'Published' : isArchived ? 'Archived' : 'Draft';
+        var statusColor = isPublished
+          ? 'text-emerald-700 font-semibold'
+          : isArchived
+            ? 'text-slate-600 font-semibold'
+            : 'text-amber-700 font-semibold';
+        var origPub = post.first_published_at || post.published_at || null;
+        var pubSnippet = origPub
+          ? '<span aria-hidden="true">&middot;</span><span>Published ' +
+            escapeHtml(formatTimestamp(origPub)) +
+            '</span>'
+          : '';
 
         return (
           '<div class="px-5 py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 hover:bg-slate-50/80 transition-colors">' +
@@ -1488,6 +2195,7 @@
           '<span>' + escapeHtml(langLabel) + '</span>' +
           '<span aria-hidden="true">&middot;</span>' +
           '<span class="font-mono">' + escapeHtml(urlPrefix + post.slug + '/') + '</span>' +
+          pubSnippet +
           '<span aria-hidden="true">&middot;</span>' +
           '<span>Updated ' + escapeHtml(formatTimestamp(post.updated_at)) + '</span>' +
           '</p>' +
@@ -1595,7 +2303,8 @@
         var postStatusLower = String(post.status || '').toLowerCase();
         var isPublished = postStatusLower === 'published';
         var isDraft = postStatusLower === 'draft';
-        var isRealDatabasePost = isValidUuid(post.id) && (isDraft || isPublished);
+        var isArchived = postStatusLower === 'archived';
+        var isRealDatabasePost = isValidUuid(post.id) && (isDraft || isPublished || isArchived);
         var isEditingThis = state.editingPostId === post.id;
         var isPublishingThisRow = state.publishingRowId === post.id;
         var isDeletingThisRow = state.deletingPostId === post.id;
@@ -1606,14 +2315,17 @@
 
         var statusBadgeHtml = isPublished
           ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">Published</span>'
-          : '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">Draft</span>';
+          : isArchived
+            ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-300">Archived</span>'
+            : '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">Draft</span>';
 
-        var publishedMetaHtml =
-          isPublished && post.published_at
-            ? '<span class="block text-[11px] text-slate-500 mt-1">Published: ' +
-              escapeHtml(formatTimestamp(post.published_at)) +
-              '</span>'
-            : '<span class="block text-[11px] text-slate-400 mt-1">Not published</span>';
+        var origPubAt = post.first_published_at || post.published_at || null;
+        var publishedMetaHtml = origPubAt
+          ? '<span class="block text-[11px] text-slate-500 mt-1">' +
+            (isPublished ? 'Published: ' : 'Originally published: ') +
+            escapeHtml(formatTimestamp(origPubAt)) +
+            '</span>'
+          : '<span class="block text-[11px] text-slate-400 mt-1">Not published</span>';
 
         var rowHighlightClass = isEditingThis
           ? 'bg-emerald-50/50 hover:bg-emerald-50/80 transition-colors'
@@ -1769,6 +2481,7 @@
   }
 
   function syncEditorHeaderForRecord(post) {
+    syncEditorialDateDisplayForRecord(post);
     if (!post || !post.id) {
       if (editorModeLabel) {
         editorModeLabel.textContent = 'Create New Post';
@@ -1780,11 +2493,15 @@
       return;
     }
 
-    var isPublished = String(post.status || '').toLowerCase() === 'published';
+    var statusLower = String(post.status || '').toLowerCase();
+    var isPublished = statusLower === 'published';
+    var isArchived = statusLower === 'archived';
     if (editorModeLabel) {
       editorModeLabel.textContent = isPublished
         ? 'Editing Published Post'
-        : 'Editing Draft Post';
+        : isArchived
+          ? 'Editing Archived Post'
+          : 'Editing Draft Post';
     }
     if (editorHeading) {
       editorHeading.textContent = 'Edit Post: ' + post.title;
@@ -1983,7 +2700,8 @@
       'post-meta-description-error',
       'post-image-url-error',
       'post-image-alt-error',
-      'post-faqs-error'
+      'post-faqs-error',
+      'post-custom-updated-at-error'
     ];
     errorIds.forEach(function (id) {
       var el = document.getElementById(id);
@@ -2002,7 +2720,8 @@
       inputSeoTitle,
       inputMetaDesc,
       inputImageUrl,
-      inputImageAlt
+      inputImageAlt,
+      inputCustomUpdatedAt
     ];
     inputs.forEach(function (input) {
       if (input) {
@@ -2100,14 +2819,15 @@
     }
 
     if (vals.featured_image_url) {
-      var isValidUrl =
-        vals.featured_image_url.indexOf('https://') === 0 ||
-        vals.featured_image_url.indexOf('http://') === 0 ||
-        vals.featured_image_url.indexOf('/') === 0;
-      if (!isValidUrl) {
-        var msgImgUrl = 'Featured Image URL must start with https://, http://, or /.';
+      var imgUrlCheck = validateAdminFeaturedImageUrl(vals.featured_image_url);
+      if (!imgUrlCheck.valid) {
+        var msgImgUrl =
+          imgUrlCheck.error || 'Featured Image URL must start with https://, http://, or /.';
         errors.push(msgImgUrl);
         setFieldError(inputImageUrl, 'post-image-url-error', msgImgUrl);
+      } else if (imgUrlCheck.normalizedUrl && inputImageUrl && inputImageUrl.value.trim() !== imgUrlCheck.normalizedUrl) {
+        inputImageUrl.value = imgUrlCheck.normalizedUrl;
+        vals.featured_image_url = imgUrlCheck.normalizedUrl;
       }
       if (!vals.featured_image_alt) {
         var msgImgAlt =
@@ -2130,6 +2850,33 @@
         ' must have both a Question and an Answer (or click Remove on that FAQ item).';
       errors.push(msgFaq);
       setFieldError(null, 'post-faqs-error', msgFaq);
+    }
+
+    if (vals.update_date_mode === 'custom') {
+      var customCheck = parseAdminManilaDateTimeToUtcIso(vals.custom_updated_at);
+      if (!customCheck.valid || !customCheck.utcIso) {
+        var msgCustomInvalid =
+          customCheck.error ||
+          'Custom Last Updated date/time is required when Custom mode is selected.';
+        errors.push(msgCustomInvalid);
+        setFieldError(inputCustomUpdatedAt, 'post-custom-updated-at-error', msgCustomInvalid);
+      } else {
+        var origPubIso =
+          state.editingPostRecord &&
+          (state.editingPostRecord.first_published_at || state.editingPostRecord.published_at);
+        if (origPubIso) {
+          var origPubMs = Date.parse(origPubIso);
+          var customUtcMs = Date.parse(customCheck.utcIso);
+          if (!isNaN(origPubMs) && !isNaN(customUtcMs) && customUtcMs < origPubMs) {
+            var msgCustomEarly =
+              'Custom Last Updated date/time cannot be earlier than the Original Published Date (' +
+              formatTimestamp(origPubIso) +
+              ' PHT).';
+            errors.push(msgCustomEarly);
+            setFieldError(inputCustomUpdatedAt, 'post-custom-updated-at-error', msgCustomEarly);
+          }
+        }
+      }
     }
 
     updateActionButtonsState();
@@ -2157,8 +2904,27 @@
   }
 
 
-  function renderPreview() {
+  async function renderPreview() {
+    if (state.isSaving || state.isUploadingImage) return;
     renderCrudFeedback(null);
+
+    var pendingFile =
+      state.selectedImageFile ||
+      (inputImageFile && inputImageFile.files && inputImageFile.files[0]) ||
+      null;
+    if (pendingFile) {
+      var uploadResult = await handleUploadSelectedImage();
+      if (!uploadResult || !uploadResult.ok) {
+        renderCrudFeedback(
+          'error',
+          'Preview Stopped — Featured Image Upload Failed',
+          (uploadResult && uploadResult.message) ||
+            'The selected featured image could not be uploaded to Supabase Storage.'
+        );
+        return;
+      }
+    }
+
     if (!validateForm({ silentSuccessBanner: false })) return;
 
     var vals = getFormValues();
@@ -2171,7 +2937,9 @@
     var serpTitleEl = document.getElementById('preview-serp-title');
     var serpDescEl = document.getElementById('preview-serp-description');
     var artLangEl = document.getElementById('preview-article-lang');
+    var artDateEl = document.getElementById('preview-article-date');
     var artAuthorEl = document.getElementById('preview-article-author');
+    var artStatusBadgeEl = document.getElementById('preview-article-status-badge');
     var artTitleEl = document.getElementById('preview-article-title');
     var artExcerptEl = document.getElementById('preview-article-excerpt');
     var artContentEl = document.getElementById('preview-article-content');
@@ -2188,10 +2956,24 @@
       artLangEl.textContent =
         vals.language === 'tl' ? 'Filipino (tl-PH)' : 'English (en-PH)';
     }
+
+    var previewDates = resolveAdminPreviewEditorialDates({
+      language: vals.language,
+      updateDateMode: vals.update_date_mode,
+      customUpdatedAt: vals.custom_updated_at,
+      firstPublishedAt: state.editingPostRecord ? state.editingPostRecord.first_published_at : null,
+      publishedAt: state.editingPostRecord ? state.editingPostRecord.published_at : null,
+      updatedAt: state.editingPostRecord ? state.editingPostRecord.updated_at : null
+    });
+
+    if (artDateEl) {
+      artDateEl.textContent = previewDates.headerLabel;
+    }
+    if (artStatusBadgeEl) {
+      artStatusBadgeEl.textContent = previewDates.modeBadgeText;
+    }
     if (artAuthorEl) {
-      var authorDisplay = vals.author_name || 'SuweldoTools';
-      artAuthorEl.textContent =
-        vals.language === 'tl' ? 'Ni ' + authorDisplay : 'By ' + authorDisplay;
+      artAuthorEl.innerHTML = renderAdminAuthorBylineHtml(vals.language, vals.author_name);
     }
     if (artTitleEl) artTitleEl.textContent = vals.title;
     if (artExcerptEl) artExcerptEl.textContent = vals.excerpt;
@@ -2201,7 +2983,7 @@
         imgUrlTextEl.textContent = vals.featured_image_url;
         imgAltTextEl.textContent = vals.featured_image_alt;
         if (imgPreviewEl) {
-          imgPreviewEl.src = vals.featured_image_url;
+          imgPreviewEl.src = resolveAdminPreviewImageSrc(vals.featured_image_url);
           imgPreviewEl.alt = vals.featured_image_alt || vals.title || 'Featured image preview';
           imgPreviewEl.classList.remove('hidden');
         }
@@ -2269,20 +3051,29 @@
     if (editorRecordId) editorRecordId.textContent = post.id;
     if (editorRecordGroupId) editorRecordGroupId.textContent = post.group_id;
 
-    var isPublished = String(post.status).toLowerCase() === 'published';
+    var statusLower = String(post.status).toLowerCase();
+    var isPublished = statusLower === 'published';
+    var isArchived = statusLower === 'archived';
     if (editorRecordStatusBadge) {
       editorRecordStatusBadge.textContent = isPublished
         ? 'Current Status: Published'
-        : 'Current Status: Draft';
+        : isArchived
+          ? 'Current Status: Archived'
+          : 'Current Status: Draft';
       editorRecordStatusBadge.className = isPublished
         ? 'inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200'
-        : 'inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200';
+        : isArchived
+          ? 'inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-300'
+          : 'inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200';
     }
 
     if (editorRecordTimestamps) {
-      var tsParts = ['Updated: ' + formatTimestamp(post.updated_at)];
-      if (isPublished && post.published_at) {
-        tsParts.push('Published: ' + formatTimestamp(post.published_at));
+      var origPub = post.first_published_at || post.published_at || null;
+      var tsParts = ['Last Updated: ' + formatTimestamp(post.updated_at)];
+      if (origPub) {
+        tsParts.unshift('Original Published: ' + formatTimestamp(origPub));
+      } else {
+        tsParts.unshift('Original Published: Not yet published');
       }
       editorRecordTimestamps.textContent = tsParts.join(' · ');
     }
@@ -2297,23 +3088,34 @@
       renderCrudFeedback(null);
     }
 
+    var rawPostImageUrl =
+      typeof post.featured_image_url === 'string' ? post.featured_image_url.trim() : '';
+    var postUrlCheck = validateAdminFeaturedImageUrl(rawPostImageUrl);
+    var normalizedPostImageUrl =
+      postUrlCheck.valid && postUrlCheck.normalizedUrl
+        ? postUrlCheck.normalizedUrl
+        : rawPostImageUrl;
+
     state.editingPostId = post.id;
     state.editingGroupId = post.group_id;
-    state.editingPostRecord = post;
+    state.editingPostRecord = Object.assign({}, post, {
+      featured_image_url: normalizedPostImageUrl || null
+    });
     state.languageTouched = false;
 
     if (inputLanguage) inputLanguage.value = post.language === 'tl' ? 'tl' : 'en';
     if (inputTitle) inputTitle.value = post.title || '';
     if (inputSlug) inputSlug.value = post.slug || '';
-    if (inputAuthorName) inputAuthorName.value = post.author_name || '';
+    if (inputAuthorName) inputAuthorName.value = resolveAdminBlogAuthorName(post.author_name);
     if (inputExcerpt) inputExcerpt.value = post.excerpt || '';
     if (inputContent) inputContent.value = post.content || '';
     if (inputSeoTitle) inputSeoTitle.value = post.seo_title || '';
     if (inputMetaDesc) inputMetaDesc.value = post.meta_description || '';
-    if (inputImageUrl) inputImageUrl.value = post.featured_image_url || '';
+    if (inputImageUrl) inputImageUrl.value = normalizedPostImageUrl;
     if (inputImageAlt) inputImageAlt.value = post.featured_image_alt || '';
     state.faqs = normalizeFaqArray(post.faqs);
     renderFaqRepeater();
+    setSelectedUpdateDateMode('keep', '');
 
     clearSelectedImageFileSelection(false);
     syncEditorHeaderForRecord(post);
@@ -2339,13 +3141,14 @@
     if (form) form.reset();
     if (inputTitle) inputTitle.value = '';
     if (inputSlug) inputSlug.value = '';
-    if (inputAuthorName) inputAuthorName.value = '';
+    if (inputAuthorName) inputAuthorName.value = DEFAULT_BLOG_AUTHOR_NAME;
     if (inputExcerpt) inputExcerpt.value = '';
     if (inputContent) inputContent.value = '';
     if (inputSeoTitle) inputSeoTitle.value = '';
     if (inputMetaDesc) inputMetaDesc.value = '';
     if (inputImageUrl) inputImageUrl.value = '';
     if (inputImageAlt) inputImageAlt.value = '';
+    setSelectedUpdateDateMode('keep', '');
     renderFaqRepeater();
 
     if (
@@ -2445,7 +3248,7 @@
   }
 
   async function submitPostWithStatus(targetStatus) {
-    if (state.isSaving) return;
+    if (state.isSaving || state.isUploadingImage) return;
 
     var bridge = window.__SUWELDOTOOLS_SUPABASE_ADMIN__;
     if (!bridge || !bridge.isAdminVerified()) {
@@ -2458,6 +3261,26 @@
     }
 
     renderCrudFeedback(null);
+
+    // If a file is selected in the file input and has not been uploaded yet, upload it first
+    var pendingFile =
+      state.selectedImageFile ||
+      (inputImageFile && inputImageFile.files && inputImageFile.files[0]) ||
+      null;
+    if (pendingFile) {
+      var uploadResult = await handleUploadSelectedImage();
+      if (!uploadResult || !uploadResult.ok) {
+        renderCrudFeedback(
+          'error',
+          targetStatus === 'published'
+            ? 'Publish Stopped — Featured Image Upload Failed'
+            : 'Save Draft Stopped — Featured Image Upload Failed',
+          (uploadResult && uploadResult.message) ||
+            'The selected featured image could not be uploaded to Supabase Storage.'
+        );
+        return;
+      }
+    }
 
     if (!validateForm({ silentSuccessBanner: true })) {
       return;
@@ -2474,7 +3297,7 @@
         language: vals.language,
         title: vals.title,
         slug: vals.slug,
-        author_name: vals.author_name ? vals.author_name : null,
+        author_name: resolveAdminBlogAuthorName(vals.author_name),
         excerpt: vals.excerpt,
         content: vals.content,
         seo_title: vals.seo_title,
@@ -2482,7 +3305,20 @@
         featured_image_url: vals.featured_image_url ? vals.featured_image_url : null,
         featured_image_alt: vals.featured_image_alt ? vals.featured_image_alt : null,
         faqs: vals.faqs,
-        status: targetStatus
+        status: targetStatus,
+        update_date_mode: vals.update_date_mode || 'keep',
+        custom_updated_at:
+          vals.update_date_mode === 'custom' && vals.custom_updated_at
+            ? vals.custom_updated_at
+            : null,
+        first_published_at:
+          state.editingPostRecord && state.editingPostRecord.first_published_at
+            ? state.editingPostRecord.first_published_at
+            : null,
+        published_at:
+          state.editingPostRecord && state.editingPostRecord.published_at
+            ? state.editingPostRecord.published_at
+            : null
       };
 
       var result = await bridge.savePost(payload);
@@ -2499,6 +3335,13 @@
       }
 
       if (result.status === 'validation_error') {
+        if (
+          vals.update_date_mode === 'custom' &&
+          result.message &&
+          result.message.toLowerCase().indexOf('custom') !== -1
+        ) {
+          setFieldError(inputCustomUpdatedAt, 'post-custom-updated-at-error', result.message);
+        }
         renderCrudFeedback('error', 'Validation Rejected by Database', result.message);
         return;
       }
@@ -2515,10 +3358,14 @@
       var savedPost = result.post;
       var actionVerb = result.isNew ? 'Created' : 'Updated';
       var statusLabel = savedPost.status === 'published' ? 'Published' : 'Saved as Draft';
-      var publishedTimestampNote =
-        savedPost.status === 'published' && savedPost.published_at
-          ? ' Published timestamp: ' + formatTimestamp(savedPost.published_at) + '.'
-          : '';
+      var origPublishedAt = savedPost.first_published_at || savedPost.published_at;
+      var publishedTimestampNote = origPublishedAt
+        ? ' Original Published: ' +
+          formatTimestamp(origPublishedAt) +
+          ' PHT · Last Updated: ' +
+          formatTimestamp(savedPost.updated_at) +
+          ' PHT.'
+        : '';
 
       // Clear unsaved-form snapshot upon confirmed save/publish, then synchronize active record
       clearEditorSnapshot();
@@ -2604,7 +3451,7 @@
         language: post.language,
         title: post.title,
         slug: post.slug,
-        author_name: post.author_name ? post.author_name : null,
+        author_name: resolveAdminBlogAuthorName(post.author_name),
         excerpt: post.excerpt,
         content: post.content,
         seo_title: post.seo_title,
@@ -2612,7 +3459,10 @@
         featured_image_url: post.featured_image_url,
         featured_image_alt: post.featured_image_alt,
         faqs: Array.isArray(post.faqs) ? post.faqs : [],
-        status: 'published'
+        status: 'published',
+        update_date_mode: 'keep',
+        first_published_at: post.first_published_at || null,
+        published_at: post.published_at || null
       });
 
       if (result.status === 'unauthorized') {
@@ -2696,11 +3546,12 @@
     if (!post || !isValidUuid(post.id)) return;
 
     var postStatusLower = String(post.status || '').toLowerCase();
-    if (postStatusLower !== 'draft' && postStatusLower !== 'published') return;
+    if (postStatusLower !== 'draft' && postStatusLower !== 'published' && postStatusLower !== 'archived') return;
 
     state.pendingDeletePost = post;
 
     var isPublished = postStatusLower === 'published';
+    var isArchived = postStatusLower === 'archived';
     var isTl = post.language === 'tl';
     var urlPrefix = isTl ? '/tl/blog/' : '/blog/';
     var langLabel = isTl ? 'Filipino (TL)' : 'English (EN)';
@@ -2711,10 +3562,14 @@
     if (deleteModalPostStatus) {
       deleteModalPostStatus.textContent = isPublished
         ? 'Status: Published'
-        : 'Status: Draft';
+        : isArchived
+          ? 'Status: Archived'
+          : 'Status: Draft';
       deleteModalPostStatus.className = isPublished
         ? 'inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200'
-        : 'inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200';
+        : isArchived
+          ? 'inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-300'
+          : 'inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200';
     }
     if (deleteModalPostSlug) {
       deleteModalPostSlug.textContent = langLabel + ' · ' + urlPrefix + post.slug + '/';
@@ -3311,8 +4166,15 @@
   }
 
   async function handleUploadSelectedImage() {
-    if (state.isUploadingImage || state.isSaving || state.deletingPostId) {
-      return;
+    if (state.activeImageUploadPromise) {
+      return state.activeImageUploadPromise;
+    }
+    if (state.isSaving || state.deletingPostId) {
+      return {
+        status: 'busy',
+        ok: false,
+        message: 'Another save or delete operation is currently in progress.'
+      };
     }
 
     var file =
@@ -3320,120 +4182,194 @@
       (inputImageFile && inputImageFile.files && inputImageFile.files[0]) ||
       null;
 
+    if (!file) {
+      return {
+        status: 'no_file',
+        ok: true,
+        publicUrl: inputImageUrl ? inputImageUrl.value.trim() : ''
+      };
+    }
+
+    var currentSig = getImageFileSignature(file);
+    var currentUrlVal = inputImageUrl ? inputImageUrl.value.trim() : '';
+    if (
+      currentSig &&
+      state.lastUploadedFileSignature === currentSig &&
+      state.lastUploadedPublicUrl &&
+      currentUrlVal === state.lastUploadedPublicUrl
+    ) {
+      clearSelectedImageFileSelection(true);
+      updateEditorImagePreview();
+      updateActionButtonsState();
+      return {
+        status: 'ok',
+        ok: true,
+        publicUrl: state.lastUploadedPublicUrl,
+        alreadyUploaded: true
+      };
+    }
+
     var validation = validateImageFileClient(file);
     if (!validation.valid) {
       renderImageUploadStatus('error', 'Cannot Upload Image', validation.error);
       updateActionButtonsState();
-      return;
+      return {
+        status: 'validation_error',
+        ok: false,
+        message: validation.error
+      };
     }
 
-    var bridge = window.__SUWELDOTOOLS_SUPABASE_ADMIN__;
-    if (!bridge || typeof bridge.uploadImage !== 'function') {
-      try {
-        var mod = await import('/src/lib/supabase.ts?v=step16b-image-upload-v2');
-        bridge = window.__SUWELDOTOOLS_SUPABASE_ADMIN__;
-        if (bridge && typeof bridge.uploadImage !== 'function' && mod && typeof mod.uploadAdminBlogImage === 'function') {
-          bridge.uploadImage = mod.uploadAdminBlogImage;
+    var uploadPromise = (async function () {
+      var bridge = window.__SUWELDOTOOLS_SUPABASE_ADMIN__;
+      if (!bridge || typeof bridge.uploadImage !== 'function') {
+        try {
+          var mod = await import('/src/lib/supabase.ts?v=step21-editorial-dates');
+          bridge = window.__SUWELDOTOOLS_SUPABASE_ADMIN__;
+          if (
+            bridge &&
+            typeof bridge.uploadImage !== 'function' &&
+            mod &&
+            typeof mod.uploadAdminBlogImage === 'function'
+          ) {
+            bridge.uploadImage = mod.uploadAdminBlogImage;
+          }
+        } catch (_importErr) {
+          // Handled below if bridge.uploadImage is still unavailable
         }
-      } catch (_importErr) {
-        // Handled below if bridge.uploadImage is still unavailable
       }
-    }
 
-    if (!bridge || typeof bridge.uploadImage !== 'function') {
+      if (!bridge || typeof bridge.uploadImage !== 'function') {
+        var unavailMsg =
+          'Supabase admin storage bridge is not initialized. Refresh the page and sign in again.';
+        renderImageUploadStatus('error', 'Upload Service Unavailable', unavailMsg);
+        return {
+          status: 'error',
+          ok: false,
+          message: unavailMsg
+        };
+      }
+
+      if (typeof bridge.isAdminVerified === 'function' && !bridge.isAdminVerified()) {
+        var authMsg =
+          'You must be signed in as a verified administrator in public.blog_admins to upload images.';
+        renderImageUploadStatus('error', 'Administrator Session Required', authMsg);
+        return {
+          status: 'unauthorized',
+          ok: false,
+          message: authMsg
+        };
+      }
+
+      state.isUploadingImage = true;
       renderImageUploadStatus(
-        'error',
-        'Upload Service Unavailable',
-        'Supabase admin storage bridge is not initialized. Refresh the page and sign in again.'
+        'info',
+        'Uploading Featured Image…',
+        'Uploading "' +
+          file.name +
+          '" (' +
+          formatFileSize(file.size) +
+          ') to Supabase Storage bucket blog-images/featured/…'
       );
-      return;
-    }
-
-    if (typeof bridge.isAdminVerified === 'function' && !bridge.isAdminVerified()) {
-      renderImageUploadStatus(
-        'error',
-        'Administrator Session Required',
-        'You must be signed in as a verified administrator in public.blog_admins to upload images.'
-      );
-      return;
-    }
-
-    state.isUploadingImage = true;
-    renderImageUploadStatus(
-      'info',
-      'Uploading Featured Image…',
-      'Uploading "' +
-        file.name +
-        '" (' +
-        formatFileSize(file.size) +
-        ') to Supabase Storage bucket blog-images/featured/…'
-    );
-    updateEditorImagePreview();
-    updateActionButtonsState();
-
-    try {
-      var result = await bridge.uploadImage(file);
-      state.isUploadingImage = false;
-
-      if (result && result.status === 'unauthorized') {
-        updateEditorImagePreview();
-        updateActionButtonsState();
-        return;
-      }
-
-      var isSuccess =
-        Boolean(result) &&
-        (result.status === 'ok' || result.ok === true) &&
-        Boolean(result.publicUrl);
-
-      if (!isSuccess) {
-        renderImageUploadStatus(
-          'error',
-          'Featured Image Upload Failed',
-          (result && (result.message || result.error)) ||
-            'Supabase Storage rejected the image upload. Verify your admin session and bucket policies.'
-        );
-        updateEditorImagePreview();
-        updateActionButtonsState();
-        return;
-      }
-
-      if (inputImageUrl) {
-        inputImageUrl.value = result.publicUrl;
-        inputImageUrl.removeAttribute('aria-invalid');
-        inputImageUrl.classList.remove('border-red-500');
-      }
-      var urlErrEl = document.getElementById('post-image-url-error');
-      if (urlErrEl) {
-        urlErrEl.textContent = '';
-        urlErrEl.classList.add('hidden');
-      }
-
-      clearSelectedImageFileSelection(true);
-
-      var hasAlt = Boolean(inputImageAlt && inputImageAlt.value.trim());
-      renderImageUploadStatus(
-        'success',
-        'Featured Image Uploaded',
-        'Uploaded to blog-images/' +
-          (result.objectPath || 'featured/') +
-          ' and populated Featured Image URL.' +
-          (hasAlt
-            ? ''
-            : ' Please enter Featured Image Alt Text before saving or publishing.')
-      );
-
-      updateEditorImagePreview();
-      updateCounters();
-      saveEditorSnapshot();
-    } catch (err) {
-      state.isUploadingImage = false;
-      var msg =
-        err instanceof Error ? err.message : 'Unexpected network error during image upload.';
-      renderImageUploadStatus('error', 'Featured Image Upload Failed', msg);
       updateEditorImagePreview();
       updateActionButtonsState();
-    }
+
+      try {
+        var result = await bridge.uploadImage(file);
+        state.isUploadingImage = false;
+
+        if (result && result.status === 'unauthorized') {
+          var unauthErrMsg =
+            result.message ||
+            'You must be signed in as a verified administrator in public.blog_admins to upload images.';
+          renderImageUploadStatus('error', 'Administrator Session Required', unauthErrMsg);
+          updateEditorImagePreview();
+          updateActionButtonsState();
+          return {
+            status: 'unauthorized',
+            ok: false,
+            message: unauthErrMsg
+          };
+        }
+
+        var isSuccess =
+          Boolean(result) &&
+          (result.status === 'ok' || result.ok === true) &&
+          Boolean(result.publicUrl);
+
+        if (!isSuccess) {
+          var failMsg =
+            (result && (result.message || result.error)) ||
+            'Supabase Storage rejected the image upload. Verify your admin session and bucket policies.';
+          renderImageUploadStatus('error', 'Featured Image Upload Failed', failMsg);
+          updateEditorImagePreview();
+          updateActionButtonsState();
+          return {
+            status: 'error',
+            ok: false,
+            message: failMsg
+          };
+        }
+
+        state.lastUploadedFileSignature = currentSig;
+        state.lastUploadedPublicUrl = result.publicUrl;
+
+        if (inputImageUrl) {
+          inputImageUrl.value = result.publicUrl;
+          inputImageUrl.removeAttribute('aria-invalid');
+          inputImageUrl.classList.remove('border-red-500');
+        }
+        var urlErrEl = document.getElementById('post-image-url-error');
+        if (urlErrEl) {
+          urlErrEl.textContent = '';
+          urlErrEl.classList.add('hidden');
+        }
+
+        clearSelectedImageFileSelection(true);
+
+        var hasAlt = Boolean(inputImageAlt && inputImageAlt.value.trim());
+        renderImageUploadStatus(
+          'success',
+          'Featured Image Uploaded',
+          'Uploaded to blog-images/' +
+            (result.objectPath || 'featured/') +
+            ' and populated branded URL (' +
+            result.publicUrl +
+            ').' +
+            (hasAlt
+              ? ''
+              : ' Please enter Featured Image Alt Text before saving or publishing.')
+        );
+
+        updateEditorImagePreview();
+        updateCounters();
+        saveEditorSnapshot();
+        return {
+          status: 'ok',
+          ok: true,
+          publicUrl: result.publicUrl,
+          objectPath: result.objectPath
+        };
+      } catch (err) {
+        state.isUploadingImage = false;
+        var msg =
+          err instanceof Error ? err.message : 'Unexpected network error during image upload.';
+        renderImageUploadStatus('error', 'Featured Image Upload Failed', msg);
+        updateEditorImagePreview();
+        updateActionButtonsState();
+        return {
+          status: 'error',
+          ok: false,
+          message: msg
+        };
+      } finally {
+        state.isUploadingImage = false;
+        state.activeImageUploadPromise = null;
+      }
+    })();
+
+    state.activeImageUploadPromise = uploadPromise;
+    return uploadPromise;
   }
 
   function handleClearFeaturedImage() {
@@ -3593,12 +4529,22 @@
     inputSeoTitle,
     inputMetaDesc,
     inputImageUrl,
-    inputImageAlt
+    inputImageAlt,
+    inputCustomUpdatedAt
   ].forEach(function (el) {
     if (el) {
       el.addEventListener('input', function () {
         if (el === inputImageUrl || el === inputImageAlt) {
           updateEditorImagePreview();
+        }
+        if (el === inputCustomUpdatedAt) {
+          var customErrEl = document.getElementById('post-custom-updated-at-error');
+          if (customErrEl) {
+            customErrEl.textContent = '';
+            customErrEl.classList.add('hidden');
+          }
+          inputCustomUpdatedAt.removeAttribute('aria-invalid');
+          inputCustomUpdatedAt.classList.remove('border-red-500');
         }
         updateCounters();
         saveEditorSnapshot();
@@ -3606,8 +4552,20 @@
     }
   });
 
+  if (updateModeRadios && updateModeRadios.length > 0) {
+    updateModeRadios.forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        syncCustomUpdateInputVisibility();
+        updateActionButtonsState();
+        saveEditorSnapshot();
+      });
+    });
+  }
+
   if (btnPreviewPost) {
-    btnPreviewPost.addEventListener('click', renderPreview);
+    btnPreviewPost.addEventListener('click', function () {
+      void renderPreview();
+    });
   }
 
   if (btnClosePreview) {
