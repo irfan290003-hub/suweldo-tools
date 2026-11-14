@@ -1,7 +1,8 @@
 {
   "version": 1,
   "include": [
-    "/images/*"
+    "/images/*",
+    "/__suweldotools/regenerate-blog"
   ],
   "exclude": []
 }

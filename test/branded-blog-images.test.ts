@@ -263,11 +263,11 @@ describe('Phase 1 — Cloudflare Pages Function (/functions/images/[[path]].ts)'
     assert.equal(postRes.headers.get('X-Content-Type-Options'), 'nosniff');
   });
 
-  it('verifies public/_routes.json strictly isolates function invocations to /images/*', async () => {
+  it('verifies public/_routes.json strictly isolates function invocations to /images/* and /__suweldotools/regenerate-blog', async () => {
     const routesRaw = await fs.readFile(path.join(PROJECT_ROOT, 'public', '_routes.json'), 'utf8');
     const routesJson = JSON.parse(routesRaw);
     assert.equal(routesJson.version, 1);
-    assert.deepEqual(routesJson.include, ['/images/*']);
+    assert.deepEqual(routesJson.include, ['/images/*', '/__suweldotools/regenerate-blog']);
     assert.deepEqual(routesJson.exclude, []);
   });
 });

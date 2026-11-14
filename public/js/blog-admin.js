@@ -24,6 +24,8 @@
     editingPostId: null,
     editingGroupId: null,
     editingPostRecord: null,
+    translationSourcePost: null,
+    confirmedInPlaceLanguageChange: false,
     languageTouched: false,
     editorDraftSnapshot: null,
     pendingDiscardCallback: null,
@@ -902,6 +904,288 @@
     };
   }
 
+  function buildPublicPostUrl(post) {
+    var isTl = post && String(post.language || '').toLowerCase() === 'tl';
+    var rawSlug = post && typeof post.slug === 'string' ? post.slug.trim() : '';
+    var encodedSlug = encodeURIComponent(rawSlug);
+    return (isTl ? '/tl/blog/' : '/blog/') + encodedSlug + '/';
+  }
+
+  function renderAdminPublishOrLiveActionHtml(post, options) {
+    var opts = options || {};
+    var postStatusLower = String((post && post.status) || '').toLowerCase();
+    var isPublished = postStatusLower === 'published';
+    if (!isPublished) {
+      var anyBusy = Boolean(opts.anyRowOperationBusy);
+      var isPublishingThisRow = Boolean(opts.isPublishingThisRow);
+      var postId = post && post.id ? String(post.id) : '';
+      return (
+        '<button type="button" data-action="publish-row" data-post-id="' +
+        escapeHtml(postId) +
+        '" ' +
+        (anyBusy ? 'disabled ' : '') +
+        'class="text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:text-slate-500 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed">' +
+        (isPublishingThisRow ? 'Publishing…' : 'Publish') +
+        '</button>'
+      );
+    }
+
+    var liveHref = buildPublicPostUrl(post);
+    var livePostId = post && post.id ? String(post.id) : '';
+    return (
+      '<a href="' +
+      escapeHtml(liveHref) +
+      '" target="_blank" rel="noopener noreferrer" data-live-post-link="' +
+      escapeHtml(livePostId) +
+      '" title="Open public article in a new tab" class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-1.5 rounded-lg transition-colors whitespace-nowrap">' +
+      'View Live <span aria-hidden="true">&#8599;</span>' +
+      '</a>'
+    );
+  }
+
+  function evaluateEditorOverwriteGuard(
+    editingPostRecord,
+    formValues,
+    confirmedInPlaceLanguageChange
+  ) {
+    if (!editingPostRecord || !editingPostRecord.id) {
+      return { blocked: false };
+    }
+    var origLang = String(editingPostRecord.language || '').toLowerCase() === 'tl' ? 'tl' : 'en';
+    var targetLang =
+      formValues && String(formValues.language || '').toLowerCase() === 'tl' ? 'tl' : 'en';
+    if (origLang === targetLang) {
+      return { blocked: false };
+    }
+    if (confirmedInPlaceLanguageChange) {
+      return { blocked: false, confirmedInPlace: true };
+    }
+    var origLangLabel = origLang === 'tl' ? 'Filipino (tl-PH)' : 'English (en-PH)';
+    var targetLangLabel = targetLang === 'tl' ? 'Filipino (tl-PH)' : 'English (en-PH)';
+    var origTitle = editingPostRecord.title || '(Untitled Post)';
+    return {
+      blocked: true,
+      reason: 'language_mismatch_on_existing_post',
+      originalLanguage: origLang,
+      targetLanguage: targetLang,
+      originalTitle: origTitle,
+      groupId: editingPostRecord.group_id || null,
+      message:
+        'Overwrite Protection: You are currently editing the existing ' +
+        origLangLabel +
+        ' post "' +
+        origTitle +
+        '". Saving with Language set to ' +
+        targetLangLabel +
+        ' would overwrite and replace the original ' +
+        origLangLabel +
+        ' article in-place. Click "Switch to New Translation Post (Keep Typed Content)" to save this as a separate ' +
+        targetLangLabel +
+        ' post in the same translation group.'
+    };
+  }
+
+  function classifyRegenerationResponse(httpStatus, data) {
+    var statusNum = Number(httpStatus) || 0;
+    var payload = data && typeof data === 'object' ? data : null;
+    var payloadStatus = payload && typeof payload.status === 'string' ? payload.status : '';
+    var payloadMsg = payload && typeof payload.message === 'string' ? payload.message.trim() : '';
+
+    if (statusNum === 404) {
+      return {
+        ok: false,
+        status: 'static_host',
+        deploymentTriggered: false,
+        regeneratedImmediately: false,
+        message:
+          payloadMsg ||
+          'Regeneration endpoint not found (HTTP 404). Changes will appear on the next deployment build.'
+      };
+    }
+
+    if (statusNum === 401 || payloadStatus === 'unauthorized') {
+      return {
+        ok: false,
+        status: 'unauthorized',
+        deploymentTriggered: false,
+        regeneratedImmediately: false,
+        message:
+          payloadMsg ||
+          'Authentication failed when requesting static blog regeneration. Please sign in again.'
+      };
+    }
+
+    if (statusNum === 403 || payloadStatus === 'rejected') {
+      return {
+        ok: false,
+        status: 'rejected',
+        deploymentTriggered: false,
+        regeneratedImmediately: false,
+        message:
+          payloadMsg ||
+          'Deployment request rejected. Only authorized blog administrators in public.blog_admins may trigger deployments.'
+      };
+    }
+
+    if (statusNum === 503 || payloadStatus === 'missing_config' || payloadStatus === 'skipped') {
+      return {
+        ok: false,
+        status: 'missing_config',
+        deploymentTriggered: false,
+        regeneratedImmediately: false,
+        message:
+          payloadMsg ||
+          'Production deploy hook configuration (CLOUDFLARE_DEPLOY_HOOK_URL) is missing on the server.'
+      };
+    }
+
+    if (statusNum === 409 || statusNum === 429 || payloadStatus === 'deployment_running') {
+      return {
+        ok: false,
+        status: 'deployment_running',
+        deploymentTriggered: false,
+        regeneratedImmediately: false,
+        message:
+          payloadMsg ||
+          'A Cloudflare Pages deployment is already queued or running. Public pages will update when the active build finishes.'
+      };
+    }
+
+    if (payload && payload.ok && payloadStatus === 'deployment_triggered') {
+      return {
+        ok: true,
+        status: 'deployment_triggered',
+        deploymentTriggered: true,
+        regeneratedImmediately: false,
+        message:
+          payloadMsg ||
+          'Cloudflare Pages deployment triggered. Static public blog pages are rebuilding now and will update once deployment finishes.'
+      };
+    }
+
+    if (
+      payload &&
+      payload.ok &&
+      (payloadStatus === 'generated' ||
+        payload.regeneratedImmediately === true ||
+        typeof payload.enCount === 'number' ||
+        payloadStatus === '')
+    ) {
+      return {
+        ok: true,
+        status: 'generated',
+        deploymentTriggered: false,
+        regeneratedImmediately: true,
+        enCount: payload.enCount || 0,
+        tlCount: payload.tlCount || 0,
+        removedCount: payload.removedCount || 0,
+        message: payloadMsg || 'Local static blog HTML pages regenerated immediately.'
+      };
+    }
+
+    return {
+      ok: false,
+      status: 'trigger_failed',
+      deploymentTriggered: false,
+      regeneratedImmediately: false,
+      message:
+        payloadMsg ||
+        'Deployment trigger failed' + (statusNum ? ' (HTTP ' + statusNum + ').' : '.')
+    };
+  }
+
+  function formatRegenerationFeedbackForAdmin(baseTitle, baseBody, regenStatus) {
+    var st = regenStatus && regenStatus.status ? regenStatus.status : 'trigger_failed';
+    var detailMsg =
+      regenStatus && regenStatus.message
+        ? regenStatus.message
+        : 'Static regeneration endpoint unavailable.';
+
+    if (st === 'generated') {
+      return {
+        variant: 'success',
+        title: baseTitle + ' & Local Static Pages Regenerated',
+        body: baseBody + ' Local static HTML pages were regenerated immediately.'
+      };
+    }
+
+    if (st === 'deployment_triggered') {
+      return {
+        variant: 'success',
+        title: baseTitle + ' — Production Deployment Triggered',
+        body:
+          baseBody +
+          ' Production Cloudflare Pages deployment was triggered. Static blog HTML is rebuilding now and public pages will update once the deployment finishes (typically 1–2 minutes).'
+      };
+    }
+
+    if (st === 'deployment_running') {
+      return {
+        variant: 'warning',
+        title: baseTitle + ' — Deployment Still Running',
+        body:
+          baseBody +
+          ' Note: A Cloudflare Pages deployment is already running. Your changes are saved in Supabase and will appear once the build completes.'
+      };
+    }
+
+    if (st === 'unauthorized') {
+      return {
+        variant: 'warning',
+        title: baseTitle + ' — Regeneration Authentication Failure',
+        body:
+          baseBody +
+          ' Warning: Production deployment could not be triggered due to an authentication failure (' +
+          detailMsg +
+          ').'
+      };
+    }
+
+    if (st === 'rejected') {
+      return {
+        variant: 'warning',
+        title: baseTitle + ' — Deployment Request Rejected',
+        body:
+          baseBody +
+          ' Warning: Production deployment request was rejected (' +
+          detailMsg +
+          ').'
+      };
+    }
+
+    if (st === 'missing_config') {
+      return {
+        variant: 'warning',
+        title: baseTitle + ' — Deploy Hook Configuration Missing',
+        body:
+          baseBody +
+          ' Warning: Production deployment was not triggered because server configuration is missing (' +
+          detailMsg +
+          ').'
+      };
+    }
+
+    if (st === 'static_host') {
+      return {
+        variant: 'warning',
+        title: baseTitle + ' (Static Host Notice)',
+        body:
+          baseBody +
+          ' Note: Static regeneration endpoint returned 404. Published pages will update on the next deployment build.'
+      };
+    }
+
+    return {
+      variant: 'warning',
+      title: baseTitle + ' — Deployment Trigger Failure',
+      body:
+        baseBody +
+        ' Warning: Production deployment trigger failed (' +
+        detailMsg +
+        ').'
+    };
+  }
+
   // Expose preview sanitizer helpers for browser and testing inspection
   if (typeof window !== 'undefined') {
     window.__SUWELDOTOOLS_BLOG_PREVIEW_RENDERER__ = {
@@ -920,36 +1204,47 @@
       parseAdminManilaDateTimeToUtcIso: parseAdminManilaDateTimeToUtcIso,
       formatUtcIsoToManilaInput: formatUtcIsoToManilaInput,
       formatAdminPublicArticleDate: formatAdminPublicArticleDate,
-      resolveAdminPreviewEditorialDates: resolveAdminPreviewEditorialDates
+      resolveAdminPreviewEditorialDates: resolveAdminPreviewEditorialDates,
+      buildPublicPostUrl: buildPublicPostUrl,
+      renderAdminPublishOrLiveActionHtml: renderAdminPublishOrLiveActionHtml,
+      evaluateEditorOverwriteGuard: evaluateEditorOverwriteGuard,
+      classifyRegenerationResponse: classifyRegenerationResponse,
+      formatRegenerationFeedbackForAdmin: formatRegenerationFeedbackForAdmin
     };
   }
 
-  // In Node/Bun testing environments or when imported, export sanitizers and skip browser DOM controller binding
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+      PREVIEW_ALLOWED_TAGS: PREVIEW_ALLOWED_TAGS,
+      PREVIEW_DISCARD_TAGS: PREVIEW_DISCARD_TAGS,
+      PREVIEW_ALLOWED_ATTRIBUTES: PREVIEW_ALLOWED_ATTRIBUTES,
+      isSafePreviewUrl: isSafePreviewUrl,
+      sanitizeAdminDomNode: sanitizeAdminDomNode,
+      sanitizeAdminHtml: sanitizeAdminHtml,
+      renderSafeAdminArticleContent: renderSafeAdminArticleContent,
+      escapeHtml: escapeHtml,
+      resolveAdminBlogAuthorName: resolveAdminBlogAuthorName,
+      getAdminAuthorProfilePath: getAdminAuthorProfilePath,
+      renderAdminAuthorBylineHtml: renderAdminAuthorBylineHtml,
+      validateAdminFeaturedImageUrl: validateAdminFeaturedImageUrl,
+      resolveAdminPreviewImageSrc: resolveAdminPreviewImageSrc,
+      getImageFileSignature: getImageFileSignature,
+      isEditorialDatePlaceholderBlock: isEditorialDatePlaceholderBlock,
+      stripEditorialDatePlaceholdersFromContent: stripEditorialDatePlaceholdersFromContent,
+      parseAdminManilaDateTimeToUtcIso: parseAdminManilaDateTimeToUtcIso,
+      formatUtcIsoToManilaInput: formatUtcIsoToManilaInput,
+      formatAdminPublicArticleDate: formatAdminPublicArticleDate,
+      resolveAdminPreviewEditorialDates: resolveAdminPreviewEditorialDates,
+      buildPublicPostUrl: buildPublicPostUrl,
+      renderAdminPublishOrLiveActionHtml: renderAdminPublishOrLiveActionHtml,
+      evaluateEditorOverwriteGuard: evaluateEditorOverwriteGuard,
+      classifyRegenerationResponse: classifyRegenerationResponse,
+      formatRegenerationFeedbackForAdmin: formatRegenerationFeedbackForAdmin
+    };
+  }
+
+  // In Node/Bun testing environments or when imported without a blog-post-form DOM, skip browser DOM controller binding
   if (typeof document === 'undefined' || !document.getElementById || !document.getElementById('blog-post-form')) {
-    if (typeof module !== 'undefined' && module.exports) {
-      module.exports = {
-        PREVIEW_ALLOWED_TAGS: PREVIEW_ALLOWED_TAGS,
-        PREVIEW_DISCARD_TAGS: PREVIEW_DISCARD_TAGS,
-        PREVIEW_ALLOWED_ATTRIBUTES: PREVIEW_ALLOWED_ATTRIBUTES,
-        isSafePreviewUrl: isSafePreviewUrl,
-        sanitizeAdminDomNode: sanitizeAdminDomNode,
-        sanitizeAdminHtml: sanitizeAdminHtml,
-        renderSafeAdminArticleContent: renderSafeAdminArticleContent,
-        escapeHtml: escapeHtml,
-        resolveAdminBlogAuthorName: resolveAdminBlogAuthorName,
-        getAdminAuthorProfilePath: getAdminAuthorProfilePath,
-        renderAdminAuthorBylineHtml: renderAdminAuthorBylineHtml,
-        validateAdminFeaturedImageUrl: validateAdminFeaturedImageUrl,
-        resolveAdminPreviewImageSrc: resolveAdminPreviewImageSrc,
-        getImageFileSignature: getImageFileSignature,
-        isEditorialDatePlaceholderBlock: isEditorialDatePlaceholderBlock,
-        stripEditorialDatePlaceholdersFromContent: stripEditorialDatePlaceholdersFromContent,
-        parseAdminManilaDateTimeToUtcIso: parseAdminManilaDateTimeToUtcIso,
-        formatUtcIsoToManilaInput: formatUtcIsoToManilaInput,
-        formatAdminPublicArticleDate: formatAdminPublicArticleDate,
-        resolveAdminPreviewEditorialDates: resolveAdminPreviewEditorialDates
-      };
-    }
     return;
   }
 
@@ -1073,11 +1368,21 @@
   // DOM Elements: Editor Header & Active Record Metadata
   var editorModeLabel = document.getElementById('editor-mode-label');
   var editorHeading = document.getElementById('editor-heading');
+  var editorModeIndicatorBanner = document.getElementById('editor-mode-indicator-banner');
+  var editorModeIndicatorBadge = document.getElementById('editor-mode-indicator-badge');
+  var editorModeIndicatorText = document.getElementById('editor-mode-indicator-text');
   var editorRecordMeta = document.getElementById('editor-record-meta');
   var editorRecordId = document.getElementById('editor-record-id');
   var editorRecordGroupId = document.getElementById('editor-record-group-id');
   var editorRecordTimestamps = document.getElementById('editor-record-timestamps');
   var editorRecordStatusBadge = document.getElementById('editor-record-status-badge');
+  var btnEditorCreateTranslation = document.getElementById('btn-editor-create-translation');
+  var btnEditorStartNewPost = document.getElementById('btn-editor-start-new-post');
+  var editorLanguageMismatchWarning = document.getElementById('editor-language-mismatch-warning');
+  var editorLanguageMismatchBody = document.getElementById('editor-language-mismatch-body');
+  var btnConvertToNewTranslation = document.getElementById('btn-convert-to-new-translation');
+  var btnRevertEditorLanguage = document.getElementById('btn-revert-editor-language');
+  var btnAllowInplaceLanguageChange = document.getElementById('btn-allow-inplace-language-change');
 
   // DOM Elements: Editorial Date Management
   var postFirstPublishedDisplay = document.getElementById('post-first-published-display');
@@ -1103,6 +1408,7 @@
   var crudFeedbackBanner = document.getElementById('form-crud-feedback');
   var crudFeedbackTitle = document.getElementById('form-crud-feedback-title');
   var crudFeedbackBody = document.getElementById('form-crud-feedback-body');
+  var crudFeedbackActions = document.getElementById('form-crud-feedback-actions');
   var tableCrudFeedbackBanner = document.getElementById('posts-table-crud-feedback');
   var tableCrudFeedbackTitle = document.getElementById('posts-table-crud-feedback-title');
   var tableCrudFeedbackBody = document.getElementById('posts-table-crud-feedback-body');
@@ -1266,12 +1572,32 @@
         : 'https://suweldotools.com/blog/';
   }
 
-  function renderCrudFeedback(variant, title, body) {
+  function findCounterpartPostInGroup(groupId, targetLanguage, excludePostId) {
+    if (!groupId || !targetLanguage) return null;
+    for (var i = 0; i < state.posts.length; i++) {
+      var p = state.posts[i];
+      if (
+        p &&
+        p.group_id === groupId &&
+        p.language === targetLanguage &&
+        p.id !== excludePostId
+      ) {
+        return p;
+      }
+    }
+    return null;
+  }
+
+  function renderCrudFeedback(variant, title, body, postForActions) {
     if (!crudFeedbackBanner || !crudFeedbackTitle || !crudFeedbackBody) return;
     if (!variant) {
       crudFeedbackBanner.classList.add('hidden');
       crudFeedbackTitle.textContent = '';
       crudFeedbackBody.textContent = '';
+      if (crudFeedbackActions) {
+        crudFeedbackActions.innerHTML = '';
+        crudFeedbackActions.classList.add('hidden');
+      }
       return;
     }
 
@@ -1288,6 +1614,44 @@
     } else {
       crudFeedbackBanner.className =
         'mx-5 sm:mx-6 mt-5 p-4 rounded-xl border border-red-300 bg-red-50 text-red-900 text-sm';
+    }
+
+    if (crudFeedbackActions) {
+      if (postForActions && postForActions.id) {
+        var isTl = postForActions.language === 'tl';
+        var counterpartLang = isTl ? 'en' : 'tl';
+        var counterpartLabel = isTl ? 'English (EN)' : 'Filipino (TL)';
+        var existingCounterpart = findCounterpartPostInGroup(
+          postForActions.group_id,
+          counterpartLang,
+          postForActions.id
+        );
+        var translationBtnLabel = existingCounterpart
+          ? 'Edit ' + counterpartLabel + ' Translation'
+          : '+ Create ' + counterpartLabel + ' Translation';
+
+        var liveLinkHtml =
+          String(postForActions.status || '').toLowerCase() === 'published'
+            ? '<a href="' +
+              escapeHtml(buildPublicPostUrl(postForActions)) +
+              '" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-800 hover:text-emerald-950 bg-white hover:bg-emerald-100 border border-emerald-300 px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap">' +
+              'View Live <span aria-hidden="true">&#8599;</span>' +
+              '</a>'
+            : '';
+
+        crudFeedbackActions.innerHTML =
+          '<button type="button" data-crud-action="create-translation" class="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-3 py-1.5 rounded-lg shadow-2xs transition-colors cursor-pointer whitespace-nowrap">' +
+          escapeHtml(translationBtnLabel) +
+          '</button>' +
+          '<button type="button" data-crud-action="create-new-post" class="inline-flex items-center gap-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 font-semibold text-xs px-3 py-1.5 rounded-lg transition-colors cursor-pointer whitespace-nowrap">' +
+          '+ Create Another New Post' +
+          '</button>' +
+          liveLinkHtml;
+        crudFeedbackActions.classList.remove('hidden');
+      } else {
+        crudFeedbackActions.innerHTML = '';
+        crudFeedbackActions.classList.add('hidden');
+      }
     }
   }
 
@@ -1975,6 +2339,15 @@
       return false;
     }
 
+    var overwriteGuard = evaluateEditorOverwriteGuard(
+      state.editingPostRecord,
+      vals,
+      state.confirmedInPlaceLanguageChange
+    );
+    if (overwriteGuard.blocked) {
+      return false;
+    }
+
     return true;
   }
 
@@ -1984,6 +2357,11 @@
       Boolean(state.deletingPostId) ||
       Boolean(state.isUploadingImage);
     var isValid = checkFormValiditySilent();
+    var overwriteGuard = evaluateEditorOverwriteGuard(
+      state.editingPostRecord,
+      getFormValues(),
+      state.confirmedInPlaceLanguageChange
+    );
 
     if (btnSaveDraft) {
       btnSaveDraft.disabled = isBusy || !isValid;
@@ -2046,12 +2424,22 @@
           state.isSaving === 'published'
             ? 'Sending publish request to Supabase…'
             : 'Saving draft to Supabase…';
+      } else if (overwriteGuard.blocked) {
+        editorActionHint.textContent =
+          'Overwrite Protection active: Click "Switch to New Translation Post (Keep Typed Content)" above so you do not overwrite the original ' +
+          (overwriteGuard.originalLanguage === 'tl' ? 'Filipino' : 'English') +
+          ' post.';
       } else if (!isValid) {
         editorActionHint.textContent =
           'Complete all required fields (*) with a valid, unique URL slug (and complete any added FAQ rows) to enable Save Draft and Publish.';
       } else if (state.editingPostId) {
         editorActionHint.textContent =
           'Ready to update existing record (' + shortUuid(state.editingPostId) + ') in public.blog_posts.';
+      } else if (state.editingGroupId) {
+        editorActionHint.textContent =
+          'Ready to insert a new counterpart translation post in Group ' +
+          shortUuid(state.editingGroupId) +
+          ' without modifying the original post.';
       } else {
         editorActionHint.textContent =
           'Ready to create a new post group and blog post in Supabase.';
@@ -2331,15 +2719,10 @@
           ? 'bg-emerald-50/50 hover:bg-emerald-50/80 transition-colors'
           : 'hover:bg-slate-50/80 transition-colors';
 
-        var publishActionBtnHtml = !isPublished
-          ? '<button type="button" data-action="publish-row" data-post-id="' +
-            escapeHtml(post.id) +
-            '" ' +
-            (anyRowOperationBusy ? 'disabled ' : '') +
-            'class="text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:text-slate-500 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer disabled:cursor-not-allowed">' +
-            (isPublishingThisRow ? 'Publishing…' : 'Publish') +
-            '</button>'
-          : '<span class="text-xs font-medium text-emerald-700 px-2 py-1">Live</span>';
+        var publishActionBtnHtml = renderAdminPublishOrLiveActionHtml(post, {
+          anyRowOperationBusy: anyRowOperationBusy,
+          isPublishingThisRow: isPublishingThisRow
+        });
 
         var deleteActionBtnHtml = isRealDatabasePost
           ? '<button type="button" data-action="delete-post" data-post-id="' +
@@ -2480,14 +2863,119 @@
     }
   }
 
+  function syncLanguageMismatchWarning() {
+    if (!editorLanguageMismatchWarning || !editorLanguageMismatchBody) return;
+    var guard = evaluateEditorOverwriteGuard(
+      state.editingPostRecord,
+      getFormValues(),
+      state.confirmedInPlaceLanguageChange
+    );
+    if (!guard.blocked) {
+      editorLanguageMismatchWarning.classList.add('hidden');
+      editorLanguageMismatchBody.textContent = '';
+      var langErrEl = document.getElementById('post-language-error');
+      if (langErrEl) {
+        langErrEl.textContent = '';
+        langErrEl.classList.add('hidden');
+      }
+      if (inputLanguage) {
+        inputLanguage.removeAttribute('aria-invalid');
+        inputLanguage.classList.remove('border-red-500');
+      }
+      return;
+    }
+
+    var origLangLabel = guard.originalLanguage === 'tl' ? 'Filipino (tl-PH)' : 'English (en-PH)';
+    var targetLangLabel = guard.targetLanguage === 'tl' ? 'Filipino (tl-PH)' : 'English (en-PH)';
+    var origUrl = buildPublicPostUrl(state.editingPostRecord);
+    editorLanguageMismatchBody.textContent =
+      'You are currently editing the existing ' +
+      origLangLabel +
+      ' article "' +
+      guard.originalTitle +
+      '" (' +
+      origUrl +
+      '). Saving with Language set to ' +
+      targetLangLabel +
+      ' would overwrite and replace the original ' +
+      origLangLabel +
+      ' post in-place. To keep the original post and save your current fields as a new ' +
+      targetLangLabel +
+      ' counterpart translation in the same group, click "Switch to New Translation Post (Keep Typed Content)" below.';
+    editorLanguageMismatchWarning.classList.remove('hidden');
+  }
+
+  function updateEditorModeIndicatorBanner(post) {
+    if (!editorModeIndicatorBanner || !editorModeIndicatorBadge || !editorModeIndicatorText) {
+      return;
+    }
+
+    if (post && post.id) {
+      var isTl = post.language === 'tl';
+      var langLabel = isTl ? 'Filipino (TL)' : 'English (EN)';
+      var postUrl = buildPublicPostUrl(post);
+      editorModeIndicatorBanner.className =
+        'mx-5 sm:mx-6 mt-5 p-3.5 rounded-xl border border-amber-300 bg-amber-50/80 text-xs text-amber-950 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5';
+      editorModeIndicatorBadge.className =
+        'inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider bg-amber-700 text-white';
+      editorModeIndicatorBadge.textContent = 'Mode: Editing Existing Post (' + langLabel + ')';
+      editorModeIndicatorText.textContent =
+        'Saving or publishing updates "' +
+        post.title +
+        '" (' +
+        postUrl +
+        ') in-place. To write a counterpart translation or another article without overwriting this post, use the buttons below.';
+      return;
+    }
+
+    if (!state.editingPostId && state.editingGroupId) {
+      var targetLang = inputLanguage && inputLanguage.value === 'tl' ? 'Filipino (TL)' : 'English (EN)';
+      var srcTitle =
+        state.translationSourcePost && state.translationSourcePost.title
+          ? '"' + state.translationSourcePost.title + '"'
+          : 'Group ' + shortUuid(state.editingGroupId);
+      editorModeIndicatorBanner.className =
+        'mx-5 sm:mx-6 mt-5 p-3.5 rounded-xl border border-emerald-300 bg-emerald-50/90 text-xs text-emerald-950 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5';
+      editorModeIndicatorBadge.className =
+        'inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider bg-emerald-700 text-white';
+      editorModeIndicatorBadge.textContent =
+        'Mode: Creating Counterpart Translation (' + targetLang + ')';
+      editorModeIndicatorText.textContent =
+        'Saving or publishing will insert a NEW ' +
+        targetLang +
+        ' post linked to ' +
+        srcTitle +
+        ' (Group: ' +
+        shortUuid(state.editingGroupId) +
+        '). The original post will not be overwritten.';
+      return;
+    }
+
+    editorModeIndicatorBanner.className =
+      'mx-5 sm:mx-6 mt-5 p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/70 text-xs text-emerald-950 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5';
+    editorModeIndicatorBadge.className =
+      'inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider bg-emerald-700 text-white';
+    editorModeIndicatorBadge.textContent = 'Mode: Creating New Post';
+    editorModeIndicatorText.textContent =
+      'Saving or publishing will create a brand-new blog post and translation group in Supabase.';
+  }
+
   function syncEditorHeaderForRecord(post) {
     syncEditorialDateDisplayForRecord(post);
+    updateEditorModeIndicatorBanner(post);
+    syncLanguageMismatchWarning();
+
     if (!post || !post.id) {
+      var isTranslationMode = Boolean(!state.editingPostId && state.editingGroupId);
       if (editorModeLabel) {
-        editorModeLabel.textContent = 'Create New Post';
+        editorModeLabel.textContent = isTranslationMode
+          ? 'Create Counterpart Translation'
+          : 'Create New Post';
       }
       if (editorHeading) {
-        editorHeading.textContent = 'Create New Blog Post';
+        editorHeading.textContent = isTranslationMode
+          ? 'Create Counterpart Translation Post'
+          : 'Create New Blog Post';
       }
       renderEditorRecordMetadata(null);
       return;
@@ -2701,7 +3189,8 @@
       'post-image-url-error',
       'post-image-alt-error',
       'post-faqs-error',
-      'post-custom-updated-at-error'
+      'post-custom-updated-at-error',
+      'post-language-error'
     ];
     errorIds.forEach(function (id) {
       var el = document.getElementById(id);
@@ -2752,6 +3241,17 @@
     clearFieldErrors();
     var errors = [];
     var vals = getFormValues();
+
+    var overwriteGuard = evaluateEditorOverwriteGuard(
+      state.editingPostRecord,
+      vals,
+      state.confirmedInPlaceLanguageChange
+    );
+    if (overwriteGuard.blocked) {
+      errors.push(overwriteGuard.message);
+      setFieldError(inputLanguage, 'post-language-error', overwriteGuard.message);
+      syncLanguageMismatchWarning();
+    }
 
     if (!vals.title) {
       var msgTitle = 'Post Title is required.';
@@ -3077,6 +3577,179 @@
       }
       editorRecordTimestamps.textContent = tsParts.join(' · ');
     }
+
+    if (btnEditorCreateTranslation) {
+      var isTl = post.language === 'tl';
+      var counterpartLang = isTl ? 'en' : 'tl';
+      var counterpartLabel = isTl ? 'English (EN)' : 'Filipino (TL)';
+      var existingCounterpart = findCounterpartPostInGroup(
+        post.group_id,
+        counterpartLang,
+        post.id
+      );
+      btnEditorCreateTranslation.textContent = existingCounterpart
+        ? 'Edit ' + counterpartLabel + ' Translation'
+        : '+ Create ' + counterpartLabel + ' Translation';
+    }
+  }
+
+  function startCounterpartTranslationFromPost(sourcePost) {
+    if (!sourcePost || !sourcePost.group_id) return;
+    var isSourceTl = sourcePost.language === 'tl';
+    var targetLang = isSourceTl ? 'en' : 'tl';
+    var targetLangLabel = isSourceTl ? 'English (en-PH)' : 'Filipino (tl-PH)';
+    var sourceLangLabel = isSourceTl ? 'Filipino (tl-PH)' : 'English (en-PH)';
+
+    var existingCounterpart = findCounterpartPostInGroup(
+      sourcePost.group_id,
+      targetLang,
+      sourcePost.id
+    );
+    if (existingCounterpart) {
+      handleEditPostRequest(existingCounterpart.id);
+      return;
+    }
+
+    var performSwitch = function () {
+      state.editingPostId = null;
+      state.editingGroupId = sourcePost.group_id;
+      state.editingPostRecord = null;
+      state.translationSourcePost = sourcePost;
+      state.confirmedInPlaceLanguageChange = false;
+      state.languageTouched = true;
+      state.faqs = [];
+
+      clearSelectedImageFileSelection(false);
+      if (form) form.reset();
+      if (inputLanguage) inputLanguage.value = targetLang;
+      if (inputTitle) inputTitle.value = '';
+      if (inputSlug) inputSlug.value = '';
+      if (inputAuthorName) {
+        inputAuthorName.value = resolveAdminBlogAuthorName(sourcePost.author_name);
+      }
+      if (inputExcerpt) inputExcerpt.value = '';
+      if (inputContent) inputContent.value = '';
+      if (inputSeoTitle) inputSeoTitle.value = '';
+      if (inputMetaDesc) inputMetaDesc.value = '';
+      if (inputImageUrl) inputImageUrl.value = '';
+      if (inputImageAlt) inputImageAlt.value = '';
+      setSelectedUpdateDateMode('keep', '');
+      renderFaqRepeater();
+
+      clearFieldErrors();
+      clearEditorSnapshot();
+      syncEditorHeaderForRecord(null);
+      updateSlugPrefix();
+      updateEditorImagePreview();
+      updateCounters();
+      renderRecentPosts();
+      renderTable();
+
+      renderCrudFeedback(
+        'success',
+        'Ready to Create ' + targetLangLabel + ' Counterpart Translation',
+        'Editor switched to New Counterpart Translation mode linked to "' +
+          sourcePost.title +
+          '" (' +
+          sourceLangLabel +
+          ', Group: ' +
+          shortUuid(sourcePost.group_id) +
+          '). Saving or publishing will create a separate ' +
+          targetLangLabel +
+          ' post without overwriting the ' +
+          sourceLangLabel +
+          ' article.'
+      );
+
+      showEditorView({ preserveScroll: false });
+    };
+
+    if (state.editingPostId && hasUnsavedEditorChanges()) {
+      openUnsavedChangesModal(
+        'Start a new ' +
+          targetLangLabel +
+          ' counterpart translation linked to "' +
+          sourcePost.title +
+          '"',
+        performSwitch,
+        {
+          title: 'Discard Unsaved Edits & Start Translation?',
+          description:
+            'You have unsaved edits on the current post. Continuing will discard those unsaved edits and open a blank form for the counterpart translation.'
+        }
+      );
+      return;
+    }
+
+    performSwitch();
+  }
+
+  function convertCurrentEditorToNewTranslationPost() {
+    if (!state.editingPostId || !state.editingPostRecord) return;
+    var sourcePost = state.editingPostRecord;
+    var targetLang = inputLanguage && inputLanguage.value === 'tl' ? 'tl' : 'en';
+    var targetLangLabel = targetLang === 'tl' ? 'Filipino (tl-PH)' : 'English (en-PH)';
+    var sourceLangLabel = sourcePost.language === 'tl' ? 'Filipino (tl-PH)' : 'English (en-PH)';
+
+    var existingCounterpart = findCounterpartPostInGroup(
+      sourcePost.group_id,
+      targetLang,
+      sourcePost.id
+    );
+    if (existingCounterpart) {
+      renderCrudFeedback(
+        'warning',
+        targetLangLabel + ' Translation Already Exists in This Group',
+        'A ' +
+          targetLangLabel +
+          ' post ("' +
+          existingCounterpart.title +
+          '") already exists in translation group ' +
+          shortUuid(sourcePost.group_id) +
+          '. Choose a unique slug or edit the existing translation post.'
+      );
+      return;
+    }
+
+    // Preserve 100% of the user's currently typed DOM values while detaching editingPostId
+    state.editingPostId = null;
+    state.editingGroupId = sourcePost.group_id;
+    state.translationSourcePost = sourcePost;
+    state.editingPostRecord = null;
+    state.confirmedInPlaceLanguageChange = false;
+    state.languageTouched = true;
+
+    if (
+      inputSlug &&
+      inputTitle &&
+      inputSlug.value.trim() === (sourcePost.slug || '') &&
+      inputTitle.value.trim() &&
+      inputTitle.value.trim() !== (sourcePost.title || '')
+    ) {
+      inputSlug.value = slugify(inputTitle.value);
+    }
+
+    clearFieldErrors();
+    syncEditorHeaderForRecord(null);
+    updateSlugPrefix();
+    updateCounters();
+    saveEditorSnapshot();
+    renderRecentPosts();
+    renderTable();
+
+    renderCrudFeedback(
+      'success',
+      'Switched to New ' + targetLangLabel + ' Translation Post (Typed Content Preserved)',
+      'Your typed fields were kept intact and detached from the existing ' +
+        sourceLangLabel +
+        ' post "' +
+        sourcePost.title +
+        '". Make sure the Title and URL Slug are translated, then click Save as Draft or Publish Post to create the new ' +
+        targetLangLabel +
+        ' record in Group ' +
+        shortUuid(sourcePost.group_id) +
+        '.'
+    );
   }
 
   function loadDatabasePostIntoEditor(post, options) {
@@ -3101,6 +3774,8 @@
     state.editingPostRecord = Object.assign({}, post, {
       featured_image_url: normalizedPostImageUrl || null
     });
+    state.translationSourcePost = null;
+    state.confirmedInPlaceLanguageChange = false;
     state.languageTouched = false;
 
     if (inputLanguage) inputLanguage.value = post.language === 'tl' ? 'tl' : 'en';
@@ -3134,6 +3809,8 @@
     state.editingPostId = null;
     state.editingGroupId = null;
     state.editingPostRecord = null;
+    state.translationSourcePost = null;
+    state.confirmedInPlaceLanguageChange = false;
     state.languageTouched = false;
     state.faqs = [];
 
@@ -3398,21 +4075,19 @@
         publishedTimestampNote;
 
       if (targetStatus === 'published') {
-        if (regenStatus && regenStatus.ok) {
-          saveFeedbackBody += ' Static HTML pages were regenerated.';
-          renderCrudFeedback('success', saveFeedbackTitle, saveFeedbackBody);
-        } else if (regenStatus && regenStatus.status === 'static_host') {
-          saveFeedbackBody += ' Note: On static hosting, published pages will appear on the next deployment build.';
-          renderCrudFeedback('warning', saveFeedbackTitle + ' (Static Host Notice)', saveFeedbackBody);
-        } else {
-          saveFeedbackBody +=
-            ' Warning: Static blog regeneration could not complete (' +
-            ((regenStatus && regenStatus.message) || 'endpoint unavailable') +
-            ').';
-          renderCrudFeedback('warning', saveFeedbackTitle + ' (Regeneration Warning)', saveFeedbackBody);
-        }
+        var formattedFeedback = formatRegenerationFeedbackForAdmin(
+          saveFeedbackTitle,
+          saveFeedbackBody,
+          regenStatus
+        );
+        renderCrudFeedback(
+          formattedFeedback.variant,
+          formattedFeedback.title,
+          formattedFeedback.body,
+          savedPost
+        );
       } else {
-        renderCrudFeedback('success', saveFeedbackTitle, saveFeedbackBody);
+        renderCrudFeedback('success', saveFeedbackTitle, saveFeedbackBody, savedPost);
       }
     } catch (err) {
       var msg =
@@ -3506,23 +4181,13 @@
       ]);
       var regenStatus = regenResults[1];
 
-      if (regenStatus && regenStatus.ok) {
-        publishMsg += ' Static HTML pages were regenerated.';
-        renderCrudFeedback('success', 'Draft Published & Static Site Updated', publishMsg);
-        renderTableCrudFeedback('success', 'Draft Published & Static Site Updated', publishMsg);
-      } else if (regenStatus && regenStatus.status === 'static_host') {
-        publishMsg +=
-          ' Note: On static hosting, the published article will appear after the next deployment build.';
-        renderCrudFeedback('warning', 'Draft Published in Supabase (Static Host Notice)', publishMsg);
-        renderTableCrudFeedback('warning', 'Draft Published in Supabase (Static Host Notice)', publishMsg);
-      } else {
-        publishMsg +=
-          ' Warning: Static regeneration could not complete (' +
-          ((regenStatus && regenStatus.message) || 'endpoint unavailable') +
-          ').';
-        renderCrudFeedback('warning', 'Draft Published with Regeneration Warning', publishMsg);
-        renderTableCrudFeedback('warning', 'Draft Published with Regeneration Warning', publishMsg);
-      }
+      var rowFeedback = formatRegenerationFeedbackForAdmin(
+        'Draft Published',
+        publishMsg,
+        regenStatus
+      );
+      renderCrudFeedback(rowFeedback.variant, rowFeedback.title, rowFeedback.body, result.post);
+      renderTableCrudFeedback(rowFeedback.variant, rowFeedback.title, rowFeedback.body);
     } catch (err) {
       var msg = err && err.message ? err.message : 'Failed to publish draft.';
       renderCrudFeedback('error', 'Publish Failed', msg);
@@ -3720,26 +4385,14 @@
       if (!wasPublished) {
         renderTableCrudFeedback('success', 'Draft Post Deleted', confirmMessage);
         renderCrudFeedback('success', 'Draft Post Deleted', confirmMessage);
-      } else if (regenStatus && regenStatus.ok) {
-        var successWithStatic =
-          confirmMessage +
-          ' Static website files were regenerated and obsolete HTML removed.';
-        renderTableCrudFeedback('success', 'Blog Post Deleted & Static Site Updated', successWithStatic);
-        renderCrudFeedback('success', 'Blog Post Deleted & Static Site Updated', successWithStatic);
-      } else if (regenStatus && regenStatus.status === 'static_host') {
-        var staticHostNotice =
-          confirmMessage +
-          ' Note: On static hosting, the published page will be removed after the next deployment build.';
-        renderTableCrudFeedback('warning', 'Blog Post Deleted from Database (Static Host)', staticHostNotice);
-        renderCrudFeedback('warning', 'Blog Post Deleted from Database (Static Host)', staticHostNotice);
       } else {
-        var regenWarning =
-          confirmMessage +
-          ' Warning: Static site regeneration could not complete (' +
-          ((regenStatus && regenStatus.message) || 'endpoint unavailable') +
-          '). Stale static HTML may remain locally until the next build.';
-        renderTableCrudFeedback('warning', 'Blog Post Deleted with Regeneration Warning', regenWarning);
-        renderCrudFeedback('warning', 'Blog Post Deleted with Regeneration Warning', regenWarning);
+        var delFeedback = formatRegenerationFeedbackForAdmin(
+          'Blog Post Deleted',
+          confirmMessage,
+          regenStatus
+        );
+        renderTableCrudFeedback(delFeedback.variant, delFeedback.title, delFeedback.body);
+        renderCrudFeedback(delFeedback.variant, delFeedback.title, delFeedback.body);
       }
     } catch (err) {
       closeDeleteConfirmationModal(true);
@@ -3758,52 +4411,54 @@
 
   async function triggerStaticBlogRegeneration() {
     if (typeof window === 'undefined' || typeof window.fetch !== 'function') {
-      return { ok: false, status: 'unavailable', message: 'Window or fetch is not available.' };
-    }
-    try {
-      var res = await window.fetch('/__suweldotools/regenerate-blog', {
-        method: 'POST',
-        headers: { Accept: 'application/json' }
-      });
-
-      if (res.status === 404) {
-        return {
-          ok: false,
-          status: 'static_host',
-          message: 'Dev sync endpoint not present on static host. Changes will reflect on next deployment build.'
-        };
-      }
-
-      if (!res.ok) {
-        return {
-          ok: false,
-          status: 'http_error',
-          message: 'Server responded with HTTP ' + res.status + ' (' + (res.statusText || 'Error') + ').'
-        };
-      }
-
-      var data = await res.json();
-      if (data && data.ok) {
-        return {
-          ok: true,
-          status: 'generated',
-          enCount: data.enCount || 0,
-          tlCount: data.tlCount || 0,
-          removedCount: data.removedCount || 0,
-          message: data.message || 'Static blog pages regenerated successfully.'
-        };
-      }
-
       return {
         ok: false,
-        status: data && data.status ? data.status : 'skipped_or_error',
-        message: (data && data.message) || 'Static blog regeneration did not complete.'
+        status: 'trigger_failed',
+        deploymentTriggered: false,
+        regeneratedImmediately: false,
+        message: 'Window or fetch is not available.'
       };
+    }
+    try {
+      var headers = { Accept: 'application/json' };
+      var bridge = window.__SUWELDOTOOLS_SUPABASE_ADMIN__;
+      if (bridge && typeof bridge.getAccessToken === 'function') {
+        try {
+          var accessToken = await bridge.getAccessToken();
+          if (accessToken) {
+            headers['Authorization'] = 'Bearer ' + accessToken;
+          }
+        } catch (_tokenErr) {
+          // Proceed and allow server to return structured 401 if token is unavailable
+        }
+      }
+
+      var res = await window.fetch('/__suweldotools/regenerate-blog', {
+        method: 'POST',
+        headers: headers
+      });
+
+      var data = null;
+      try {
+        var text = await res.text();
+        if (text && text.trim().startsWith('{')) {
+          data = JSON.parse(text);
+        }
+      } catch (_parseErr) {
+        data = null;
+      }
+
+      return classifyRegenerationResponse(res.status, data);
     } catch (err) {
       return {
         ok: false,
-        status: 'network_error',
-        message: err && err.message ? err.message : 'Could not contact static blog regeneration endpoint.'
+        status: 'trigger_failed',
+        deploymentTriggered: false,
+        regeneratedImmediately: false,
+        message:
+          err && err.message
+            ? err.message
+            : 'Could not contact static blog regeneration endpoint.'
       };
     }
   }
@@ -4084,9 +4739,67 @@
     });
   }
 
+  if (btnEditorCreateTranslation) {
+    btnEditorCreateTranslation.addEventListener('click', function () {
+      if (state.editingPostRecord) {
+        startCounterpartTranslationFromPost(state.editingPostRecord);
+      }
+    });
+  }
+
+  if (btnEditorStartNewPost) {
+    btnEditorStartNewPost.addEventListener('click', function () {
+      requestCreatePostMode();
+    });
+  }
+
+  if (crudFeedbackActions) {
+    crudFeedbackActions.addEventListener('click', function (e) {
+      var target = e.target;
+      if (!target || !target.closest) return;
+      var btn = target.closest('button[data-crud-action]');
+      if (!btn) return;
+      var action = btn.getAttribute('data-crud-action');
+      if (action === 'create-translation' && state.editingPostRecord) {
+        startCounterpartTranslationFromPost(state.editingPostRecord);
+      } else if (action === 'create-new-post') {
+        requestCreatePostMode();
+      }
+    });
+  }
+
+  if (btnConvertToNewTranslation) {
+    btnConvertToNewTranslation.addEventListener('click', function () {
+      convertCurrentEditorToNewTranslationPost();
+    });
+  }
+
+  if (btnRevertEditorLanguage) {
+    btnRevertEditorLanguage.addEventListener('click', function () {
+      if (!state.editingPostRecord || !inputLanguage) return;
+      inputLanguage.value = state.editingPostRecord.language === 'tl' ? 'tl' : 'en';
+      state.confirmedInPlaceLanguageChange = false;
+      syncLanguageMismatchWarning();
+      updateSlugPrefix();
+      updateActionButtonsState();
+      saveEditorSnapshot();
+    });
+  }
+
+  if (btnAllowInplaceLanguageChange) {
+    btnAllowInplaceLanguageChange.addEventListener('click', function () {
+      state.confirmedInPlaceLanguageChange = true;
+      syncLanguageMismatchWarning();
+      updateActionButtonsState();
+    });
+  }
+
   if (inputLanguage) {
     inputLanguage.addEventListener('change', function () {
       state.languageTouched = true;
+      state.confirmedInPlaceLanguageChange = false;
+      syncLanguageMismatchWarning();
+      updateEditorModeIndicatorBanner(state.editingPostRecord);
       updateSlugPrefix();
       updateActionButtonsState();
       saveEditorSnapshot();

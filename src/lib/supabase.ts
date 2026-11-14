@@ -424,6 +424,7 @@ export interface SuweldoBlogAdminBridge {
   ) => Promise<AnnouncementAdminPublishResult>;
   toggleAnnouncementActive: (active: boolean) => Promise<AnnouncementAdminToggleResult>;
   isAdminVerified: () => boolean;
+  getAccessToken?: () => Promise<string | null>;
 }
 
 interface SuweldoBlogAdminUIController {
@@ -2669,6 +2670,26 @@ function formatSignInError(rawMessage: string): AuthBannerMessage {
 }
 
 /**
+ * Retrieves the current Supabase session access token for server-side authenticated
+ * admin endpoints (such as POST /__suweldotools/regenerate-blog).
+ */
+export async function getAdminAccessToken(): Promise<string | null> {
+  const client = getSupabaseClient();
+  if (!client) {
+    return null;
+  }
+  try {
+    const { data, error } = await client.auth.getSession();
+    if (error || !data?.session?.access_token) {
+      return null;
+    }
+    return data.session.access_token;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Initializes the connection status badge and the full administrator login/logout
  * and `public.blog_admins` authorization flow on `/admin/`.
  */
@@ -2881,6 +2902,7 @@ async function initAdminSupabase(): Promise<void> {
   if (typeof window !== 'undefined') {
     window.__SUWELDOTOOLS_SUPABASE_ADMIN__ = {
       isAdminVerified: () => hadVerifiedAdminSession,
+      getAccessToken: getAdminAccessToken,
       fetchPosts: async () => {
         const result = await fetchAdminBlogPosts();
         if (result.status === 'unauthorized') {
@@ -3453,6 +3475,7 @@ if (typeof window !== 'undefined') {
   if (!window.__SUWELDOTOOLS_SUPABASE_ADMIN__) {
     window.__SUWELDOTOOLS_SUPABASE_ADMIN__ = {
       isAdminVerified: () => false,
+      getAccessToken: getAdminAccessToken,
       fetchPosts: fetchAdminBlogPosts,
       savePost: saveAdminBlogPost,
       deletePost: deleteAdminBlogPost,
@@ -3465,6 +3488,9 @@ if (typeof window !== 'undefined') {
     };
   } else {
     const bridge = window.__SUWELDOTOOLS_SUPABASE_ADMIN__;
+    if (typeof bridge.getAccessToken !== 'function') {
+      bridge.getAccessToken = getAdminAccessToken;
+    }
     if (typeof bridge.uploadImage !== 'function') {
       bridge.uploadImage = uploadAdminBlogImage;
     }
