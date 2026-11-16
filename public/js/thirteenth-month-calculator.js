@@ -6,7 +6,7 @@
  * Grounded in statutory Philippine laws:
  * - Presidential Decree No. 851 (13th Month Pay Law)
  * - DOLE Revised Guidelines on the Implementation of the 13th Month Pay Law (Nov 16, 1987)
- * - DOLE Annual Labor Advisories (e.g. Labor Advisory No. 25, Series of 2023)
+ * - DOLE Annual Labor Advisories (DOLE Labor Advisory No. 21, Series of 2026)
  * - NIRC Section 32(B)(7)(e) as amended by RA 10963 (TRAIN Law) — ₱90,000 Tax-Exempt Ceiling
  */
 
@@ -135,15 +135,19 @@
     }
 
     const effectiveMonthlySalary = isCustomTotal
-      ? roundCurrency(totalBasicEarned > 0 ? (monthsWorked > 0 ? totalBasicEarned / monthsWorked : totalBasicEarned / config.annualDivisor) : 0)
+      ? roundCurrency(totalBasicEarned > 0 && monthsWorked > 0 ? totalBasicEarned / monthsWorked : 0)
       : monthlySalary;
 
-    // DOLE statutory formula: Total basic salary earned during calendar year / 12
-    const gross13thMonth = totalBasicEarned > 0 ? (totalBasicEarned / config.annualDivisor) : 0;
-
-    // Proration & eligibility evaluation
+    // Proration & strict DOLE statutory eligibility (PD 851 & Labor Advisory No. 21, Series of 2026: >= 1 full month)
+    const meetsMinimumService = monthsWorked >= config.minimumServiceMonths;
     const isProrated = monthsWorked < 12 || (monthlySalary > 0 && Math.abs(totalBasicEarned - (monthlySalary * 12)) > 0.01);
-    const isEligible = totalBasicEarned > 0 && (monthsWorked >= 1 || (monthlySalary > 0 && totalBasicEarned >= (monthlySalary * 1)));
+    const isEligible = totalBasicEarned > 0 && meetsMinimumService;
+
+    // DOLE statutory formula: Total basic salary earned during calendar year / 12 (only when eligible)
+    const voluntaryNonStatutoryEstimate = (!meetsMinimumService && totalBasicEarned > 0)
+      ? (totalBasicEarned / config.annualDivisor)
+      : 0;
+    const gross13thMonth = isEligible ? (totalBasicEarned / config.annualDivisor) : 0;
 
     // Tax treatment under TRAIN Law Section 32(B)(7)(e) (₱90,000 aggregate cap)
     const totalAggregateBenefits = gross13thMonth + otherBenefits;
@@ -158,6 +162,7 @@
       totalBasicEarned,
       isCustomTotal,
       gross13thMonth,
+      voluntaryNonStatutoryEstimate,
       isProrated,
       isEligible,
       otherBenefits,
@@ -287,13 +292,17 @@
 
     if (resCalculationFormula) {
       if (isTl) {
-        if (res.totalBasicEarned > 0) {
+        if (!res.isEligible && res.monthsWorked < 1) {
+          resCalculationFormula.textContent = 'Serbisyo < 1 buwan (hindi kwalipikado sa batas) = ₱0.00 mandatoryo';
+        } else if (res.totalBasicEarned > 0) {
           resCalculationFormula.textContent = `${formatPHP(res.totalBasicEarned)} ÷ 12 buwan = ${formatPHP(res.gross13thMonth)}`;
         } else {
           resCalculationFormula.textContent = '₱0.00 ÷ 12 buwan = ₱0.00';
         }
       } else {
-        if (res.totalBasicEarned > 0) {
+        if (!res.isEligible && res.monthsWorked < 1) {
+          resCalculationFormula.textContent = 'Service < 1 month (not statutorily eligible) = ₱0.00 mandatory';
+        } else if (res.totalBasicEarned > 0) {
           resCalculationFormula.textContent = `${formatPHP(res.totalBasicEarned)} ÷ 12 months = ${formatPHP(res.gross13thMonth)}`;
         } else {
           resCalculationFormula.textContent = '₱0.00 ÷ 12 months = ₱0.00';
@@ -303,7 +312,10 @@
 
     // Prorated vs Full-Year Badge
     if (resProratedBadge) {
-      if (res.isCustomTotal && res.totalBasicEarned <= 0) {
+      if (res.monthsWorked < 1) {
+        resProratedBadge.textContent = isTl ? 'Hindi Kwalipikado sa Batas (< 1 buwan)' : 'Not Statutorily Eligible (< 1 mo)';
+        resProratedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800';
+      } else if (res.isCustomTotal && res.totalBasicEarned <= 0) {
         resProratedBadge.textContent = isTl ? 'Walang Nailagay na Basic Salary' : 'No Basic Salary Entered';
         resProratedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700';
       } else if (res.isCustomTotal && res.totalBasicEarned > 0) {
@@ -311,9 +323,6 @@
           ? 'Custom na Taunang Kita'
           : 'Custom Annual Earnings';
         resProratedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800';
-      } else if (res.monthsWorked < 1 && res.totalBasicEarned === 0) {
-        resProratedBadge.textContent = isTl ? '0 Buwang Ipinasok' : '0 Months Rendered';
-        resProratedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800';
       } else if (res.totalBasicEarned <= 0) {
         resProratedBadge.textContent = isTl ? 'Walang Nailagay na Kita' : 'No Earnings Entered';
         resProratedBadge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700';
@@ -332,17 +341,17 @@
 
     // DOLE Eligibility Note
     if (resEligibilityNote) {
-      if (res.isCustomTotal && res.monthsWorked < 1 && res.totalBasicEarned > 0) {
-        resEligibilityNote.textContent = isTl
-          ? 'May inilagay na custom earnings. Paalala: Sa ilalim ng DOLE rules, karaniwang kailangan ang hindi bababa sa isang buwang serbisyo sa loob ng calendar year.'
-          : 'Custom earnings entered. Note: DOLE rules generally require at least one month of service rendered during the calendar year.';
-        resEligibilityNote.className = 'text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-200 mt-3';
-        resEligibilityNote.classList.remove('hidden');
-      } else if (!res.isEligible && res.monthsWorked < 1) {
-        resEligibilityNote.textContent = isTl
-          ? 'Sa ilalim ng DOLE Presidential Decree No. 851, kailangang nakapagtrabaho nang hindi bababa sa isang (1) buong buwan sa loob ng calendar year ang rank-and-file na empleyado upang maging kwalipikado sa statutory 13th month pay.'
-          : 'Under DOLE Presidential Decree No. 851, rank-and-file employees must render at least one (1) full month of service during the calendar year to qualify for statutory 13th month pay.';
-        resEligibilityNote.className = 'text-xs text-amber-700 bg-amber-50 p-2.5 rounded-lg border border-amber-200 mt-3';
+      if (res.monthsWorked < 1) {
+        const baseWarning = isTl
+          ? 'Babala — Hindi Kwalipikado sa Batas: Sa ilalim ng Presidential Decree No. 851 at DOLE Labor Advisory No. 21, Series of 2026, kinakailangang nakapagtrabaho nang hindi bababa sa isang (1) buong buwan sa loob ng calendar year upang maging kwalipikado sa mandatoryong 13th month pay (mandatoryong halaga: ₱0.00).'
+          : 'Warning — Not Statutorily Entitled: Under Presidential Decree No. 851 and DOLE Labor Advisory No. 21, Series of 2026, employees must render at least one (1) full month of service during the calendar year to qualify for mandatory 13th month pay (statutory entitlement: ₱0.00).';
+        const voluntarySuffix = res.voluntaryNonStatutoryEstimate > 0
+          ? (isTl
+            ? ` Hindi-mandatoryo / boluntaryong tantiya lamang ng employer (1/12 ng inilagay na kita, hindi iniaatas ng batas): ${formatPHP(res.voluntaryNonStatutoryEstimate)}.`
+            : ` Non-statutory / voluntary employer estimate only (1/12 of entered earnings, not mandated by law): ${formatPHP(res.voluntaryNonStatutoryEstimate)}.`)
+          : '';
+        resEligibilityNote.textContent = baseWarning + voluntarySuffix;
+        resEligibilityNote.className = 'text-xs font-medium text-amber-900 bg-amber-50 p-3 rounded-xl border border-amber-300 mt-3 leading-relaxed';
         resEligibilityNote.classList.remove('hidden');
       } else {
         resEligibilityNote.classList.add('hidden');

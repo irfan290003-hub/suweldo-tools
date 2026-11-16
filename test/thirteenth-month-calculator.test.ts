@@ -171,6 +171,7 @@ function createCalculatorHarness(locale: 'en' | 'tl' = 'en') {
       totalBasicEarned: number;
       isCustomTotal: boolean;
       gross13thMonth: number;
+      voluntaryNonStatutoryEstimate: number;
       isProrated: boolean;
       isEligible: boolean;
       otherBenefits: number;
@@ -277,13 +278,7 @@ describe('13th Month Pay Calculator — Issue 3A & Statutory Verification', () =
     assert.equal(elements.tmResGrossPay.textContent, '₱15,000.00');
     assert.equal(elements.tmResMonthlyEquivalent.textContent, '₱30,000.00');
     assert.equal(elements.tmResProratedBadge.textContent, 'Custom Annual Earnings');
-
-    // Also verify when monthsWorked is 0 in custom mode (effectiveMonthlySalary = totalBasicEarned / 12)
-    elements.tmMonthsWorked.value = '0';
-    engine.recalculate();
-    assert.equal(elements.tmResGrossPay.textContent, '₱15,000.00');
-    assert.equal(elements.tmResMonthlyEquivalent.textContent, '₱15,000.00');
-    assert.equal(elements.tmResProratedBadge.textContent, 'Custom Annual Earnings');
+    assert.equal(elements.tmResEligibilityNote.classList.contains('hidden'), true);
   });
 
   it('6. Custom mode badge in English and Filipino (both positive and zero custom earnings)', () => {
@@ -399,5 +394,200 @@ describe('13th Month Pay Calculator — Issue 3A & Statutory Verification', () =
     assert.equal(elements.tmResTotalEarned.textContent, '₱300,000.00');
     assert.equal(elements.tmResMonthlyEquivalent.textContent, '₱25,000.00');
     assert.equal(elements.tmResProratedBadge.textContent, 'Full Calendar Year (12/12 mos)');
+  });
+
+  it('9. Custom mode with 0 months worked and positive earnings is NOT statutorily eligible (EN & TL)', () => {
+    const enHarness = createCalculatorHarness('en');
+    const enDirect = enHarness.engine.calculate13thMonth({
+      monthlySalary: 25000,
+      monthsWorked: 0,
+      exactTotalEarned: 180000,
+      otherBenefits: 0,
+    });
+    assert.equal(enDirect.isEligible, false);
+    assert.equal(enDirect.gross13thMonth, 0);
+    assert.equal(enDirect.voluntaryNonStatutoryEstimate, 15000);
+    assert.equal(enDirect.effectiveMonthlySalary, 0);
+
+    enHarness.elements.tmMonthlySalary.value = '25000';
+    enHarness.elements.tmMonthsWorked.value = '0';
+    enHarness.elements.tmCustomTotalToggle.checked = true;
+    enHarness.elements.tmExactTotal.value = '180000';
+    enHarness.engine.recalculate();
+
+    assert.equal(enHarness.elements.tmResGrossPay.textContent, '₱0.00');
+    assert.equal(enHarness.elements.tmResTotalEarned.textContent, '₱180,000.00');
+    assert.equal(enHarness.elements.tmResMonthlyEquivalent.textContent, '₱0.00');
+    assert.equal(enHarness.elements.tmResProratedBadge.textContent, 'Not Statutorily Eligible (< 1 mo)');
+    assert.equal(
+      enHarness.elements.tmResCalculationFormula.textContent,
+      'Service < 1 month (not statutorily eligible) = ₱0.00 mandatory'
+    );
+    assert.equal(enHarness.elements.tmResEligibilityNote.classList.contains('hidden'), false);
+    assert.equal(enHarness.elements.tmResEligibilityNote.className.includes('amber'), true);
+    assert.equal(enHarness.elements.tmResEligibilityNote.textContent.includes('Presidential Decree No. 851'), true);
+    assert.equal(enHarness.elements.tmResEligibilityNote.textContent.includes('DOLE Labor Advisory No. 21, Series of 2026'), true);
+    assert.equal(
+      enHarness.elements.tmResEligibilityNote.textContent.includes('Non-statutory / voluntary employer estimate only'),
+      true
+    );
+    assert.equal(enHarness.elements.tmResEligibilityNote.textContent.includes('₱15,000.00'), true);
+
+    const tlHarness = createCalculatorHarness('tl');
+    tlHarness.elements.tmMonthlySalary.value = '25000';
+    tlHarness.elements.tmMonthsWorked.value = '0';
+    tlHarness.elements.tmCustomTotalToggle.checked = true;
+    tlHarness.elements.tmExactTotal.value = '180000';
+    tlHarness.engine.recalculate();
+
+    assert.equal(tlHarness.elements.tmResGrossPay.textContent, '₱0.00');
+    assert.equal(tlHarness.elements.tmResProratedBadge.textContent, 'Hindi Kwalipikado sa Batas (< 1 buwan)');
+    assert.equal(
+      tlHarness.elements.tmResCalculationFormula.textContent,
+      'Serbisyo < 1 buwan (hindi kwalipikado sa batas) = ₱0.00 mandatoryo'
+    );
+    assert.equal(tlHarness.elements.tmResEligibilityNote.classList.contains('hidden'), false);
+    assert.equal(tlHarness.elements.tmResEligibilityNote.className.includes('amber'), true);
+    assert.equal(tlHarness.elements.tmResEligibilityNote.textContent.includes('DOLE Labor Advisory No. 21, Series of 2026'), true);
+    assert.equal(
+      tlHarness.elements.tmResEligibilityNote.textContent.includes('Hindi-mandatoryo / boluntaryong tantiya lamang ng employer'),
+      true
+    );
+    assert.equal(tlHarness.elements.tmResEligibilityNote.textContent.includes('₱15,000.00'), true);
+  });
+
+  it('10. Custom mode with 0.5 months worked and positive earnings is NOT statutorily eligible', () => {
+    const { elements, engine } = createCalculatorHarness('en');
+
+    const direct = engine.calculate13thMonth({
+      monthlySalary: 30000,
+      monthsWorked: 0.5,
+      exactTotalEarned: 36000,
+      otherBenefits: 0,
+    });
+    assert.equal(direct.isEligible, false);
+    assert.equal(direct.gross13thMonth, 0);
+    assert.equal(direct.voluntaryNonStatutoryEstimate, 3000);
+
+    elements.tmMonthlySalary.value = '30000';
+    elements.tmMonthsWorked.value = '0.5';
+    elements.tmCustomTotalToggle.checked = true;
+    elements.tmExactTotal.value = '36000';
+    engine.recalculate();
+
+    assert.equal(elements.tmResGrossPay.textContent, '₱0.00');
+    assert.equal(elements.tmResProratedBadge.textContent, 'Not Statutorily Eligible (< 1 mo)');
+    assert.equal(
+      elements.tmResCalculationFormula.textContent,
+      'Service < 1 month (not statutorily eligible) = ₱0.00 mandatory'
+    );
+    assert.equal(elements.tmResEligibilityNote.classList.contains('hidden'), false);
+    assert.equal(
+      elements.tmResEligibilityNote.textContent.includes('Non-statutory / voluntary employer estimate only'),
+      true
+    );
+    assert.equal(elements.tmResEligibilityNote.textContent.includes('₱3,000.00'), true);
+  });
+
+  it('11. Standard mode with less than one full month (0.5 and 0 months) is NOT statutorily eligible', () => {
+    const enHarness = createCalculatorHarness('en');
+    enHarness.elements.tmMonthlySalary.value = '24000';
+    enHarness.elements.tmMonthsWorked.value = '0.5';
+    enHarness.engine.recalculate();
+
+    assert.equal(enHarness.elements.tmResGrossPay.textContent, '₱0.00');
+    assert.equal(enHarness.elements.tmResTotalEarned.textContent, '₱12,000.00');
+    assert.equal(enHarness.elements.tmResProratedBadge.textContent, 'Not Statutorily Eligible (< 1 mo)');
+    assert.equal(
+      enHarness.elements.tmResCalculationFormula.textContent,
+      'Service < 1 month (not statutorily eligible) = ₱0.00 mandatory'
+    );
+    assert.equal(enHarness.elements.tmResEligibilityNote.classList.contains('hidden'), false);
+    assert.equal(enHarness.elements.tmResEligibilityNote.textContent.includes('₱1,000.00'), true);
+
+    enHarness.elements.tmMonthsWorked.value = '0';
+    enHarness.engine.recalculate();
+    assert.equal(enHarness.elements.tmResGrossPay.textContent, '₱0.00');
+    assert.equal(enHarness.elements.tmResProratedBadge.textContent, 'Not Statutorily Eligible (< 1 mo)');
+    assert.equal(enHarness.elements.tmResEligibilityNote.classList.contains('hidden'), false);
+    assert.equal(
+      enHarness.elements.tmResEligibilityNote.textContent.includes('Non-statutory / voluntary employer estimate only'),
+      false
+    );
+
+    const tlHarness = createCalculatorHarness('tl');
+    tlHarness.elements.tmMonthlySalary.value = '24000';
+    tlHarness.elements.tmMonthsWorked.value = '0.5';
+    tlHarness.engine.recalculate();
+
+    assert.equal(tlHarness.elements.tmResGrossPay.textContent, '₱0.00');
+    assert.equal(tlHarness.elements.tmResProratedBadge.textContent, 'Hindi Kwalipikado sa Batas (< 1 buwan)');
+    assert.equal(tlHarness.elements.tmResEligibilityNote.classList.contains('hidden'), false);
+    assert.equal(tlHarness.elements.tmResEligibilityNote.textContent.includes('₱1,000.00'), true);
+  });
+
+  it('12. Exactly 1 full month of service IS statutorily eligible (Standard & Custom Mode)', () => {
+    const { elements, engine } = createCalculatorHarness('en');
+
+    // Standard Mode with 1 month
+    elements.tmMonthlySalary.value = '24000';
+    elements.tmMonthsWorked.value = '1';
+    engine.recalculate();
+
+    assert.equal(elements.tmResGrossPay.textContent, '₱2,000.00');
+    assert.equal(elements.tmResTotalEarned.textContent, '₱24,000.00');
+    assert.equal(elements.tmResMonthsWorked.textContent, '1 month');
+    assert.equal(elements.tmResProratedBadge.textContent, 'Prorated Estimate (1/12 mos)');
+    assert.equal(elements.tmResEligibilityNote.classList.contains('hidden'), true);
+
+    // Custom Mode with 1 month
+    elements.tmCustomTotalToggle.checked = true;
+    elements.tmExactTotal.value = '30000';
+    engine.recalculate();
+
+    assert.equal(elements.tmResGrossPay.textContent, '₱2,500.00');
+    assert.equal(elements.tmResProratedBadge.textContent, 'Custom Annual Earnings');
+    assert.equal(elements.tmResEligibilityNote.classList.contains('hidden'), true);
+  });
+
+  it('13. Eligible employees with valid custom annual earnings compute totalBasicEarned / 12 cleanly', () => {
+    const { elements, engine } = createCalculatorHarness('en');
+
+    elements.tmMonthlySalary.value = '25000';
+    elements.tmMonthsWorked.value = '12';
+    elements.tmCustomTotalToggle.checked = true;
+    elements.tmExactTotal.value = '312000';
+    engine.recalculate();
+
+    assert.equal(elements.tmResGrossPay.textContent, '₱26,000.00');
+    assert.equal(elements.tmResMonthlyEquivalent.textContent, '₱26,000.00');
+    assert.equal(elements.tmResProratedBadge.textContent, 'Custom Annual Earnings');
+    assert.equal(elements.tmResEligibilityNote.classList.contains('hidden'), true);
+    assert.equal(elements.tmResCalculationFormula.textContent, '₱312,000.00 ÷ 12 months = ₱26,000.00');
+  });
+
+  it('14. ₱90,000 TRAIN Law tax exemption calculation remains unchanged', () => {
+    const { elements, engine } = createCalculatorHarness('en');
+
+    // Eligible employee exceeding ₱90,000 cap
+    elements.tmMonthlySalary.value = '80000';
+    elements.tmMonthsWorked.value = '12';
+    elements.tmOtherBenefits.value = '25000';
+    engine.recalculate();
+
+    assert.equal(elements.tmResGrossPay.textContent, '₱80,000.00');
+    assert.equal(elements.tmResTotalBenefits.textContent, '₱105,000.00');
+    assert.equal(elements.tmResTaxExemptPortion.textContent, '₱90,000.00');
+    assert.equal(elements.tmResTaxableExcess.textContent, '₱15,000.00');
+    assert.equal(elements.tmResTaxBadge.textContent, 'Exceeds ₱90,000 Cap');
+
+    // Ineligible employee (< 1 month): statutory 13th month is ₱0, aggregate benefits reflect only otherBenefits
+    elements.tmMonthsWorked.value = '0.5';
+    engine.recalculate();
+    assert.equal(elements.tmResGrossPay.textContent, '₱0.00');
+    assert.equal(elements.tmResTotalBenefits.textContent, '₱25,000.00');
+    assert.equal(elements.tmResTaxExemptPortion.textContent, '₱25,000.00');
+    assert.equal(elements.tmResTaxableExcess.textContent, '₱0.00');
+    assert.equal(elements.tmResTaxBadge.textContent, '100% Tax-Exempt');
   });
 });

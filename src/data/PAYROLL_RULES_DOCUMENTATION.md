@@ -154,33 +154,47 @@ This document establishes the authoritative reference data and official regulato
 * **Agency:** Department of Labor and Employment (DOLE) & Bureau of Internal Revenue (BIR)
 * **Primary Law:** Presidential Decree No. 851 (Requiring all employers to pay their employees a 13th month pay, enacted December 16, 1975)
 * **Implementing Rules:** Revised Guidelines on the Implementation of the 13th Month Pay Law (issued by DOLE on November 16, 1987)
-* **Annual Directives:** DOLE Annual Labor Advisories on Payment of 13th Month Pay (e.g. Labor Advisory No. 25, Series of 2023)
+* **2026 Directive:** **DOLE Labor Advisory No. 21, Series of 2026** (*Guidelines on the Payment of Thirteenth-Month Pay*, issued November 2026)
+* **Maternity Salary Differential Rules:** **DOLE Department Advisory No. 01, Series of 2019** pursuant to Republic Act No. 11210 (105-Day Expanded Maternity Leave Law)
 * **Tax Code Statute:** Section 32(B)(7)(e) of the National Internal Revenue Code of 1997, as amended by Republic Act No. 10963 (TRAIN Law)
 * **Official Portals:**
-  * DOLE: [dole.gov.ph](https://www.dole.gov.ph)
+  * DOLE: [dole.gov.ph](https://www.dole.gov.ph) | DOLE Online Compliance Portal: [reports.dole.gov.ph](https://reports.dole.gov.ph)
   * BIR: [bir.gov.ph](https://www.bir.gov.ph)
 
-### Eligibility & Coverage
-* **Coverage:** All rank-and-file employees in the private sector who have rendered at least one (1) month of service within the calendar year, regardless of their position, designation, employment status, or the method by which their wages are paid.
-* **Payment Deadline:** Employers are mandated by law to pay the 13th month pay on or before **December 24** of each calendar year.
-* **Separated / Resigned Employees:** An employee who resigned or whose services were terminated at any time before the payment of the 13th month pay is entitled to a prorated 13th month pay in proportion to the length of time worked within the calendar year.
+### Eligibility & Coverage (Employee Entitlement)
+* **General Coverage:** All rank-and-file employees in the private sector who have rendered at least **one (1) month** of service within the calendar year are entitled to 13th month pay, regardless of their position, designation, employment status, or the method by which their wages are paid. Managerial employees and statutorily exempt entities under PD 851 are excluded.
+* **Piece-Rate Workers:** Covered under DOLE Labor Advisory No. 21, Series of 2026; their 13th month pay is computed as one-twelfth (1/12) of their total basic earnings from production/output during the calendar year.
+* **Fixed or Guaranteed Wage Plus Commission:** Covered based on total basic salary earned. Only the fixed or guaranteed wage automatically constitutes basic salary; commissions are **excluded by default** (*Boie-Takeda Chemicals v. De la Serna*; *Philippine Fuji Xerox v. Trajano*), unless integrated into basic salary by employment contract, company policy, or CBA, or structured as direct productivity-based wage (*Philippine Duplicators v. NLRC*).
+* **Maternity Leave with Salary Differential:** Rank-and-file female employees who availed of maternity leave and received a salary differential remain covered. Under DOLE Department Advisory No. 01, Series of 2019, the **employer-paid salary differential** is included in basic salary for 13th month pay computation (unless the employer qualifies for statutory exemption from paying the differential under RA 11210), while direct **SSS maternity cash benefits** are excluded.
+* **Multiple Employers:** Employees working concurrently or sequentially for multiple private employers during the year are entitled to separate 13th month pay from each employer with whom they worked at least one (1) month, computed independently on basic salary earned from that employer.
+* **Resigned, Terminated, or Separated Employees:** Employees who resigned or whose services were terminated at any time before payment are entitled to a proportionate (prorated) 13th month pay based on actual basic salary earned during the calendar year.
+
+### Employer Compliance Obligations (DOLE Labor Advisory No. 21, Series of 2026)
+* **Payment Deadline:** Employers must pay the 13th month pay **on or before December 24, 2026** (or optionally pay half before school opening and the remaining balance on or before December 24).
+* **No Exemption or Deferment:** No request or application for exemption from payment of 13th month pay, or for deferment of payment thereof, shall be accepted and allowed.
+* **Compliance Reporting:** Employers must submit a report of compliance through the **DOLE Online Compliance Portal (`reports.dole.gov.ph`)** on or before **January 15, 2027**.
 
 ### Calculation Formula
 $$\text{Gross 13th Month Pay} = \frac{\text{Total Basic Salary Earned During the Calendar Year}}{12}$$
 
 * For an employee with a fixed basic salary who worked a complete 12 months with no unpaid absences, this equals one month's basic salary.
-* For an employee with salary adjustments during the year, unpaid absences (leave without pay / undertime), or who worked fewer than 12 months (e.g. hired mid-year or resigned early), the DOLE-mandated formula uses the **actual total basic salary earned**, not the latest monthly rate multiplied by 12.
+* For an employee with salary adjustments during the year, unpaid absences (leave without pay / undertime), piece-rate output pay, qualifying fixed wage + integrated commissions, employer-paid maternity salary differential, or who worked fewer than 12 months (e.g. hired mid-year, resigned, or terminated), the DOLE-mandated formula uses the **actual total basic salary earned**, not the latest monthly rate multiplied by 12.
 
 ### What Counts as "Basic Salary"
-* **Generally Included:** All remunerations or earnings paid by an employer to an employee for regular services rendered.
-* **Generally Excluded:** Unless integrated into the basic salary by individual employment contract, company policy, or Collective Bargaining Agreement (CBA):
+* **Included:**
+  * Regular monthly, daily, or hourly basic salary for services rendered (including regular basic pay earned for an unworked regular holiday)
+  * Paid authorized leave days (Vacation, Sick, and Service Incentive Leave)
+  * Piece-rate basic earnings from production/output during the calendar year
+  * Employer-paid maternity leave salary differential under RA 11210 and DOLE Department Advisory No. 01, Series of 2019 (unless the employer qualifies for statutory salary-differential exemption under RA 11210)
+* **Excluded by Default (Unless treated as part of basic salary through an individual or collective agreement, established company practice, or company policy):**
+  * Cost-of-living allowances (COLA)
+  * Cash conversion/equivalent of unused vacation and sick leave credits (and convertible unused SIL credits)
   * Overtime pay
-  * Premium pay for work on rest days and special/regular holidays
   * Night shift differential
-  * Unused vacation and sick leave cash conversion
-  * Cost-of-living allowances (COLA), transportation, food, housing, and other fringe benefits
-  * Profit-sharing bonuses and discretionary awards
-  * Non-productivity commissions
+  * Additional holiday pay and rest day premium pay *(distinct from regular basic pay for an unworked regular holiday, which forms part of regular basic salary)*
+  * Non-integrated monetary allowances (e.g., transportation, food, housing), profit-sharing payments, discretionary bonuses, and commissions *(for fixed/guaranteed wage plus commission employees, the fixed or guaranteed wage is included, while commissions are excluded by default unless integrated as basic salary or structured as direct productivity-based wages)*
+* **Statutorily Excluded (Not Employer-Paid Basic Salary):**
+  * **Direct SSS Maternity Cash Benefits:** Social insurance cash benefits paid directly by the Social Security System (SSS) under RA 11210 and the Social Security Act are statutory social security benefits rather than remuneration or basic salary paid by the employer, and must not be presented as employer-integratable wage items. *(This is distinct from the employer-paid **maternity leave salary differential**, which bridges full pay less SSS maternity cash benefits and employee statutory contributions under DOLE Department Advisory No. 01, Series of 2019 and is included in basic salary unless the employer is statutorily exempt from paying the differential.)*
 
 ### Statutory Tax Treatment (The ₱90,000 Benefit Cap)
 * Under Section 32(B)(7)(e) of the Tax Code as amended by RA 10963 (TRAIN Law), 13th month pay and "other benefits" (such as productivity incentives, Christmas bonus, loyalty awards, and other bonuses of similar nature) are exempt from income tax up to a maximum aggregate threshold of **₱90,000.00** per calendar year.
